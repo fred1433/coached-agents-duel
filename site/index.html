@@ -16,14 +16,19 @@
 <body>
 <main>
   <header class="intro">
-    <h1>Coaching or luck, on a score sheet you can check by hand</h1>
-    <p class="lede">Two agents split four tea, three silk and two saffron in eight alternating actions. Each one has values the other cannot see and a memory of at most five lessons. The engine validates every action and computes both scores: results come from rules, not from a model's judgement.</p>
+    <h1>Can coaching beat luck?</h1>
+    <p class="lede">Replay a real negotiation, inspect the five-lesson memory, and explore what a two-week test could detect.</p>
+    <p class="lede-small">Two agents split four tea, three silk and two saffron in eight actions, each with hidden values and a memory of at most five lessons. Rules compute every score. Jump to <button type="button" class="linklike" id="full-memory">the full-memory case</button>.</p>
     <p class="provenance">Recorded model runs. Demo coaching written by The AI Pipe.</p>
   </header>
 
   <section class="sheet-section" aria-labelledby="sheet-title">
     <h2 id="sheet-title" class="visually-hidden">The duel, move by move</h2>
     <article class="sheet" id="sheet">
+      <div class="sheet-commands">
+        <button type="button" class="btn" id="top-replay">Replay from move 1</button>
+        <button type="button" class="btn btn-seal" id="top-reveal" aria-expanded="false">Reveal the scores</button>
+      </div>
       <div class="sheet-head">
         <div class="field f-event"><span class="label">Duel</span><span class="entry" id="f-event"></span></div>
         <div class="field f-scen"><span class="label">Scenario</span><span class="entry" id="f-scen"></span></div>
@@ -47,7 +52,7 @@
       </div>
       <div class="reveal" id="reveal-panel" hidden></div>
     </article>
-    <p class="sheet-note">This duel is shown because it is easy to follow, not because it is typical. Every recorded duel can be opened on the sheet.</p>
+    <p class="sheet-note">This duel illustrates how the engine works. It is shown because it is easy to follow, not because it is typical, and it shows no effect of coaching. Every recorded duel can be opened on the sheet.</p>
     <details class="corpus" id="corpus">
       <summary><span id="corpus-count"></span></summary>
       <div class="corpus-list" id="corpus-list"></div>
@@ -56,7 +61,7 @@
 
   <section class="coach-section" aria-labelledby="coach-title">
     <h2 id="coach-title">From a coach's note to the next match</h2>
-    <p class="section-lede">After each series, the two coached agents receive a short note and turn it into one lesson. The self-reflective agent gets the same match information without a note and writes its own. Memory holds five lessons, so from the second round each new lesson has to replace one or be discarded.</p>
+    <p class="section-lede">After each series, the two coached agents receive a short note and turn it into one lesson. The self-reflective agent gets the same type of post-match information about its own duels, without a note, and writes its own. Memory holds five lessons, so from the second round each new lesson has to replace one or be discarded.</p>
     <div class="coach-controls">
       <div class="seg" role="tablist" aria-label="Agent" id="agent-tabs"></div>
       <div class="seg seg-small" role="tablist" aria-label="Round" id="round-tabs"></div>
@@ -66,6 +71,7 @@
 
   <section class="power-section" aria-labelledby="power-title">
     <h2 id="power-title">What a two-week pilot could detect</h2>
+    <p class="boundary">These 48 runs demonstrate the engine and memory loop. They do not estimate a coaching effect. The paired experiment below is the proposed next test.</p>
     <p class="section-lede">The simulation estimates what a two-week pilot could detect under explicit assumptions. Each coach's agent is split into a coached branch and a self-reflective branch from the same saved state; after two weeks both are frozen and play the same evaluation matches. The benefit of coaching is the gap between the two, coach by coach, tested across coaches.</p>
     <article class="sheet tally" aria-label="Simulated pilots">
       <div class="sheet-head tally-head">
@@ -80,8 +86,9 @@
       <div class="tally-foot" id="tally-foot"></div>
     </article>
     <div class="power-notes">
-      <p class="aside">More matches make each agent's score more precise. More coaches show whether the benefit holds beyond one coach. When the gap varies a lot between coaches, extra matches stop helping and only more coaches do.</p>
+      <p class="aside"><b>The +5 and +10 point gains are assumed end-of-pilot effects. The simulation does not predict how much agents learn in two weeks.</b> More matches make each agent's score more precise. More coaches show whether the benefit holds beyond one coach. When the gap varies a lot between coaches, extra matches stop helping and only more coaches do.</p>
       <p class="aside" id="rank-line"></p>
+      <p class="aside" id="impasse-line"></p>
       <p class="aside">A non-significant result is reported as the range of benefits still compatible with the data. "Undetermined at this size" is a possible outcome.</p>
     </div>
     <div class="cost" id="cost"></div>

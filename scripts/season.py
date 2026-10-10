@@ -61,8 +61,21 @@ def path(name):
     return CORPUS / name
 
 
+def rebuild_agents() -> dict:
+    """The memory journal is authoritative: agents = roster + every logged update, in order."""
+    agents = {d["id"]: Agent(d["id"], d["name"], d["style"], d["personality"], d["learning"], d["lessons"]) for d in ROSTER}
+    for e in read_jsonl("memory_events.jsonl"):
+        r = agents[e["agent"]].apply_update({"decision": e["decision"], "lesson": e["lesson"],
+                                             "replace_slot": e.get("slot")}, e["source"])
+        if r["after"] != e["after"] or r["after_version"] != e["after_version"]:
+            raise RuntimeError(f"memory journal does not replay for {e['agent']} round {e.get('round')}")
+    return agents
+
+
 def load_agents() -> dict:
-    return {d["id"]: Agent.from_dict(d) for d in json.loads(path("agents.json").read_text())}
+    agents = rebuild_agents()
+    save_agents(agents)  # agents.json is a derived snapshot, rewritten from the journal
+    return agents
 
 
 def save_agents(agents: dict):
@@ -151,24 +164,33 @@ def series(n: int):
     run_batch(jobs, False, f"series {n}", keep_prompts_first=True)
 
 
-def lessons(n: int, only: str | None = None):
+def lessons(n: int, only: str | None = None, llm=None):
+    """One memory update per learning agent for round n. Each update is journaled and the snapshot
+    saved at once; an update already in the journal is never redone, so a rerun resumes cleanly."""
     agents = load_agents()
     notes = json.loads(path(f"coach_notes_{n}.json").read_text()) if path(f"coach_notes_{n}.json").exists() else {}
     recs = [r for r in read_jsonl("duels.jsonl") if r["series"] == f"series {n}"]
-    llm = ClaudeCLI()
+    done = {(e.get("round"), e["agent"]) for e in read_jsonl("memory_events.jsonl")}
+    llm = llm or ClaudeCLI()
     for a in agents.values():
-        if a.learning == "none" or (only and a.id != only):
+        if a.learning == "none" or (only and a.id != only) or (n, a.id) in done:
             continue
         mine = [r for r in recs if a.id in (r["players"]["first"]["agent"], r["players"]["second"]["agent"])]
-        fb = None
-        if a.learning == "coached":
-            fb = notes[a.id]["note"]
-        rec = update_memory(a, mine, llm, fb)
+        fb = notes[a.id]["note"] if a.learning == "coached" else None
+        try:
+            rec = update_memory(a, mine, llm, fb)
+        except ExecutionIncident as e:
+            append("incidents.jsonl", {"phase": "lessons", "round": n, "agent": a.id, "kind": e.kind,
+                                       "attempts": e.attempts})
+            if isinstance(e, QuotaExhausted):
+                raise
+            continue
+        rec["id"] = f"r{n}-{a.id}"
         rec["round"] = n
         rec["coach_written_by"] = notes.get(a.id, {}).get("written_by") if fb else None
         append("memory_events.jsonl", rec)
+        save_agents(agents)
         print(a.id, rec["decision"], rec["valid"], rec.get("error"), "->", rec["lesson"])
-    save_agents(agents)
 
 
 def calibrate():

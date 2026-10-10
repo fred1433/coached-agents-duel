@@ -1,6 +1,6 @@
 # Coached agents duel
 
-Two AI agents negotiate a split of tea, silk and saffron under fixed rules. Each agent has a personality, private values and a memory of at most five lessons. A coach's note becomes a lesson; the agent decides what to keep. Rules, not the model, decide every score.
+Two AI agents negotiate a split of tea, silk and saffron under fixed rules. Each agent has a personality, private values and a memory of at most five lessons. A coach's note becomes a lesson; the agent decides what to keep. Rules compute every score.
 
 Replay page: https://theaipipe.com/demos/coached-duel/
 
@@ -8,12 +8,14 @@ Replay page: https://theaipipe.com/demos/coached-duel/
 
 - **The duel, end to end.** Structured actions (offer, accept, reject) validated by schema and then by the engine; 8 alternating actions; scores computed by code. 48 real duels were played by a model and recorded in `corpus/duels.jsonl`, with every action, message, memory version and token count.
 - **The coaching loop.** Coach note, lesson written by the agent, memory update (add, replace a slot, or discard), versioned memory, next match loaded with that exact version. Two rounds were run; in the second, every learning agent's memory was full and each one chose a slot to replace (`corpus/memory_events.jsonl`). Each duel's record holds the exact lessons it was played with.
-- **The branches the analysis needs.** Four agents: two coached, one self-reflective (same inputs minus the coach's note, same limits), one that never learns.
+- **Four demo agents with three learning modes.** Two coached, one self-reflective (the same type of post-match information about its own duels, no note, same limits), one that never updates its memory. They have different personalities and starting lessons, so they are not matched branches of one agent: the paired design below is the proposed experiment.
 - **Replays from identical states** to measure luck alone: 3 configurations x 4 replays, flagged `eval=true`, which forbids any memory write.
 - **A power simulation** that applies exactly the planned analysis (`sim/power.py`), fed with the noise measured on those replays.
 - **Cost accounting** from the raw usage the CLI returns, per call, per duel, per lesson update.
 
 ## Limits, said plainly
+
+- These 48 runs demonstrate the engine and memory loop. They do not estimate a coaching effect. The paired experiment described below is the proposed next test.
 
 - The demo season is small: 4 agents, 36 season duels, 12 replays, 2 rounds of coaching. It shows the machine. It concludes nothing about coaching.
 - The coach's notes were written by The AI Pipe for the demo. There is one human source, not independent coaches.
@@ -27,10 +29,10 @@ Replay page: https://theaipipe.com/demos/coached-duel/
 ```
 python3 -m pip install -r requirements.txt   # numpy, scipy, pytest
 python3 scripts/rescore.py      # replays the 48 logged duels through the engine, recomputes every score
-python3 -m pytest -q tests      # 27 model-free tests, including log/page score concordance
+python3 -m pytest -q tests      # 34 model-free tests, including log/page score concordance
 ```
 
-Expected: `48 duels replayed, 48 agreements, 0 mismatches`, then `27 passed`.
+Expected: `48 duels replayed, 48 agreements, 0 mismatches`, then `34 passed`.
 
 ## The duel, specified
 
@@ -60,13 +62,15 @@ Two questions, kept apart:
 1. **Are the performances of frozen versions reproducible?** Freeze each agent's memory, replay the same evaluation schedule twice, compare the rankings.
 2. **Does human feedback add more than self-reflection, at equal conditions?** That is the coaching question.
 
+A third question, whether one person is durably a better coach than another, is out of reach with one personality and one learning trajectory per coach. It would need repeated trajectories, and possibly several personalities per coach.
+
 Protocol for the two-week run:
 
 - **Paired branches.** For each coached personality, three branches start from the same saved state: human-coached, self-reflective, and a copy that never learns. The coached and self-reflective branches get the same model, personality, number of matches, number of updates, memory limit, eviction rule and end-of-match information. Proposed cadence: one update per coach per day, after a batch of matches.
 - **Reference phase.** A balanced schedule of matches before any feedback (not a fixed "week").
-- **Frozen evaluations** at the start, day 7 and day 14: memories frozen, the same panel of frozen opponents, scenarios reserved for measurement, both roles. These matches write nothing (`eval=true`).
+- **Frozen evaluations** at the start, day 7 and day 14, then a second full evaluation of the final versions to check that their ranking is reproducible: memories frozen, the same panel of frozen opponents, scenarios reserved for measurement, both roles. These matches write nothing (`eval=true`).
 - **Primary analysis.** For each coach, the coached branch's mean evaluation score minus the self-reflective branch's, on the same evaluation matches (the shared starting state cancels). Report every coach's difference, their mean and a 95% interval; two-sided t-test across coaches. A mixed model (small-sample correction, the two scores of one match treated as dependent) is secondary.
-- **Counting.** Witness branches are not coaches. The question about coaches themselves is framed as differences between coach-agent pairs.
+- **Counting.** Each training match of a learning branch is a separate duel against a frozen panel opponent; if two learning branches ever meet, that one match serves both and the scheduler must count it once. Witness branches are not coaches. The question about coaches themselves is framed as differences between coach-agent pairs.
 - **Outcomes.** If the test is not significant, report the range of benefits still compatible with the data. "Undetermined at this size" is a planned outcome.
 - **Ranking.** No Elo. Rank frozen versions by mean score under balanced conditions, with intervals.
 - **Rule-based profiles** to see whether agents stay distinct: anchoring of the first offer, concession per offer, actions to agreement, impasse rate.
@@ -84,31 +88,51 @@ Profiles measured on the 36 demo season duels (share of the pool's value):
 
 `python3 sim/power.py 3000` (about 20 seconds). The simulation estimates what a two-week pilot could detect under explicit assumptions. It applies exactly the primary analysis above and never uses a true value. Score points are percent of the pool's value.
 
-Measured inputs (from `corpus/pilot_params.json`): replay noise 7.3 points (12 replays from 3 identical states; it measures variability within one situation, not between coaches), first-mover edge 4.4 points, spread between scenarios 7.2 points, impasses 0 of 36. Hypotheses: average benefit of coaching 0, +5 or +10 points; variation of that benefit between coach-personality pairs none, 5 or 10 points; self-reflection gain +3 points (cancels in the comparison); spread between agents 2.6 points (the spread of the four demo agents' means, used only as a hypothesis: shuffling the agent labels over the season's scores gives a spread at least that large with p = 0.33, so it may be noise alone). Schedule: 4 training matches per learning branch per day for 14 days, evaluations at the start, day 7 and day 14.
+Measured inputs (from `corpus/pilot_params.json`): replay noise 7.3 points (12 replays from 3 identical states; it measures the luck of play for a fixed version, not the variability of learning trajectories, lesson choices or evictions over two weeks), first-seat score gap 4.4 points (including value-profile effects, since each seat keeps its value profile), spread between scenarios 7.2 points, impasses 0 of 36.
+
+Hypotheses: average benefit of coaching 0, +5 or +10 points; its standard deviation between coach-personality pairs none, 5 or 10 points (normal draws, so some pairs land well beyond); self-reflection gain +3 points (cancels in the comparison). **The +5 and +10 point gains are assumed end-of-pilot effects. The simulation does not predict how much agents learn in two weeks**: the 14 days and the training matches set volume and cost, not power. The benefit setting is the gain before impasses: an impasse gives the fixed impasse value whatever the branch, which shrinks the benefit actually observed.
 
 With the measured noise and 16 evaluation matches per frozen version:
 
-| Coaches | Variation between coaches | +10 detected | +5 detected | False alarms at 0 | 95% interval, +/- points | Matches in two weeks |
+| Coaches | SD of the benefit between coaches | +10 detected | +5 detected | False alarms at 0 | 95% interval, +/- points | Matches in two weeks |
 |---|---|---|---|---|---|---|
-| 8 | none | 100% | 99% | 5.6% | 2.1 | 1,792 |
-| 8 | +/-5 points | 99% | 58% | 5.2% | 4.5 | 1,792 |
-| 8 | +/-10 points | 66% | 22% | 5.2% | 8.2 | 1,792 |
-| 10 | none | 100% | >99% | 4.7% | 1.8 | 2,240 |
-| 10 | +/-5 points | >99% | 71% | 5.0% | 3.9 | 2,240 |
-| 10 | +/-10 points | 78% | 28% | 4.2% | 7.2 | 2,240 |
-| 16 | none | 100% | 100% | 4.8% | 1.4 | 3,584 |
-| 16 | +/-5 points | 100% | 90% | 4.7% | 3.0 | 3,584 |
-| 16 | +/-10 points | 95% | 44% | 4.5% | 5.4 | 3,584 |
+| 8 | none | 100% | 99% | 5.6% | 2.1 | 2,176 |
+| 8 | SD 5 points | 99% | 58% | 5.2% | 4.5 | 2,176 |
+| 8 | SD 10 points | 66% | 22% | 5.2% | 8.2 | 2,176 |
+| 10 | none | 100% | >99% | 4.7% | 1.8 | 2,720 |
+| 10 | SD 5 points | >99% | 71% | 5.0% | 3.9 | 2,720 |
+| 10 | SD 10 points | 78% | 28% | 4.2% | 7.2 | 2,720 |
+| 16 | none | 100% | 100% | 4.8% | 1.4 | 4,352 |
+| 16 | SD 5 points | 100% | 90% | 4.7% | 3.0 | 4,352 |
+| 16 | SD 10 points | 95% | 44% | 4.5% | 5.4 | 4,352 |
 
-Reading it: more matches make each agent's score more precise; more coaches show whether the benefit generalises. When the benefit varies a lot between coaches, going from 4 to 64 evaluation matches barely moves detection (10 coaches, +5 points, variation 10: 25% to 30%), while going from 8 to 16 coaches does. Ranking stability of frozen versions is a hypothesis-driven figure: if agents truly differ by the spread above, two independent runs of the same evaluation agree with a median rank correlation of 0.34 at 4 matches, 0.66 at 16 and 0.87 at 64 (10 coaches). Every cell, including half and 1.5 times the noise, is in `sim/results.json`; across all 135 zero-benefit cells false alarms run from 4.0% to 6.0%, and `tests/test_sim.py` checks that they stay near 5%.
+Reading it: more matches make each agent's score more precise; more coaches show whether the benefit generalises. When the benefit varies a lot between coaches, going from 4 to 64 evaluation matches barely moves detection (10 coaches, +5 points, SD 10: 25% to 30%), while going from 8 to 16 coaches does. Every cell, including half and 1.5 times the noise, is in `sim/results.json`; across all 135 zero-benefit cells false alarms run from 4.0% to 6.0%, and `tests/test_sim.py` checks that they stay near 5%.
+
+Impasse sensitivity (+5 points, SD 5, measured noise, 16 matches; separate simulation runs, so the 0% column differs from the table above by Monte Carlo noise only):
+
+| Coaches | 0% impasses | 5% | 10% | Benefit observed at 10%, points |
+|---|---|---|---|---|
+| 8 | 58% | 45% | 37% | 4.5 |
+| 10 | 72% | 57% | 46% | 4.5 |
+| 16 | 92% | 80% | 72% | 4.5 |
+
+Ranking stability, a stand-alone illustration: 30 versions drawn independently with a spread of 2.6 points between them (the spread of the four demo agents' means, an illustrative assumption, not an established skill difference), each evaluated twice in full; median rank correlation between the two runs, 10 coaches:
+
+| Replay noise | 4 matches | 16 matches | 64 matches |
+|---|---|---|---|
+| half | 0.67 | 0.87 | 0.96 |
+| as measured | 0.33 | 0.65 | 0.88 |
+| 1.5 times | 0.19 | 0.48 | 0.77 |
 
 ## Cost of running the duel
 
 Three separate lines:
 
-1. **Additional API spend for this demo: 0 USD.** Every call ran on a Claude subscription through the Claude Code CLI.
+1. **Running cost, estimated.** See line 3: about 0.047 USD per duel with learning, about 125 USD for the 10-coach pilot.
 2. **Observed usage** (raw usage returned by the CLI, all 248 calls behind the current corpus, no failed attempt): per duel on average 5.0 calls, 1,913 output tokens, 6,115 input tokens written to cache, 6,584 read from cache and about 10 uncached, about 20 seconds. The 6 lesson updates used 1,587 output tokens in all. Total for the duels: 293,524 cache-write, 316,018 cache-read, 484 uncached input and 91,804 output tokens. The replaced part of the first run (30 duels, 4 lesson updates) used 149 more calls on the same subscription, kept in `corpus/superseded/`.
-3. **Equivalent API cost, estimated** at the public list price of the only model run, `claude-sonnet-5-5`, read on 2026-10-10 at https://platform.claude.com/docs/en/about-claude/pricing (input 2 USD, 1-hour cache write 4 USD, cache read 0.10 USD, output 10 USD per million tokens): **0.044 USD per duel, 0.047 USD counting lesson updates** ("duel only" vs "duel + learning"). The CLI's own cost field gives the same total (2.12 USD for the 48 duels). A pilot of 10 coaches with 16 evaluation matches per version, about 2,240 matches and 280 lesson updates, would come to about 104 USD at that rate. Effort was set to low; another model or effort level changes these numbers.
+3. **Equivalent API cost, estimated** at the public list price of the only model run, `claude-sonnet-5-5`, read on 2026-10-10 at https://platform.claude.com/docs/en/about-claude/pricing (input 2 USD, 1-hour cache write 4 USD, cache read 0.10 USD, output 10 USD per million tokens): **0.044 USD per duel, 0.047 USD counting lesson updates** ("duel only" vs "duel + learning"). The CLI's own cost field gives the same total (2.12 USD for the 48 duels). A pilot of 10 coaches with 16 evaluation matches per version, including the second full evaluation of the final versions, is 2,720 matches (1,120 training, 1,600 evaluation) and 280 lesson updates: about 125 USD at that rate. Every known attempt, failed ones included, is counted in tokens, cost and time; usage at a model with no known price is reported as unpriced rather than free.
+
+Additional API spend for this demo: 0 USD. Every call ran on a Claude subscription through the Claude Code CLI. Effort was set to low; another model or effort level changes these numbers.
 
 A character count of the prompts and outputs (about 945,000 characters for 702,000 reported tokens) is kept only as a rough control: the CLI adds its own schema and framing.
 
@@ -129,6 +153,12 @@ The duel comes first; the group round would be built on top of the duel's agents
 - **Exclusion vote.** After the split, sealed simultaneous votes, one per agent, no self-votes. Invalid ballot: counted as abstention. The agent with the most votes is excluded from the payout and its share is redistributed in proportion to the others' shares; a tie excludes nobody.
 - **Scoring** stays rule-based: each agent's payout over the value of the whole pool to it.
 
+## Reliability
+
+- The memory journal (`corpus/memory_events.jsonl`) is authoritative: agents are rebuilt from the roster plus every logged update, and `agents.json` is a snapshot rewritten after each update. A lesson round interrupted by a quota resumes without redoing journaled updates (tested).
+- Model outputs are validated structurally before any rule: a non-string offer id or a lesson that is not a string loses the turn or the update instead of crashing. Memory limits apply at creation, loading and every update; the 400-character limit is in the lesson prompt and schema.
+- For the real experiment, pin the model id and effort in the configuration.
+
 ## Repository map
 
 - `duel/engine.py` rules, validation, scoring
@@ -143,3 +173,4 @@ The duel comes first; the group round would be built on top of the duel's agents
 - `corpus/` everything recorded: duels, memory events, coach notes, agents, scenarios; `corpus/superseded/` the first run, kept for the record
 - `site/` the static replay page
 - `tests/` model-free tests
+- `LICENSE` MIT

@@ -86,7 +86,8 @@ class ClaudeCLI:
             if d is None or p.returncode != 0 or d.get("is_error"):
                 kind = "quota" if any(m in blob.lower() for m in QUOTA_MARKERS) else "cli_error"
                 rec = {"kind": kind, "returncode": p.returncode, "detail": blob[:400],
-                       "usage": (d or {}).get("usage"), "seconds": round(time.time() - t0, 1)}
+                       "usage": (d or {}).get("usage"), "model": next(iter((d or {}).get("modelUsage") or {}), None),
+                       "seconds": round(time.time() - t0, 1)}
                 attempts.append(rec)
                 if kind == "quota":
                     raise QuotaExhausted("quota", rec["detail"], attempts)

@@ -114,7 +114,7 @@ def pilot():
         hits += st.pstdev(means) >= pers_sd - 1e-9
     perm_p = hits / N
     out = {"measured": {"replay_sd_points": round(sigma, 2) if sigma is not None else None,
-                        "impasse_rate": round(imp, 3), "first_mover_edge_points": round(role, 2),
+                        "impasse_rate": round(imp, 3), "first_seat_gap_points": round(role, 2),
                         "scenario_sd_points": round(scen_sd, 2), "agent_mean_sd_points": round(pers_sd, 2), "agent_spread_perm_p": round(perm_p, 3),
                         "duels": len(duels), "replays": len(cal), "calibration": rows},
            "sim_inputs": {"sigma_rep": max(round(sigma, 2), 1.0), "impasse_rate": round(imp, 3),
@@ -149,6 +149,7 @@ def site():
     notes = {n: json.loads((C / f"coach_notes_{n}.json").read_text()) for n in (1, 2) if (C / f"coach_notes_{n}.json").exists()}
     play_calls = [c for d in duels for c in d["calls"]]
     play_calls += [c for inc in incidents for c in inc.get("partial_calls", [])]  # calls of interrupted duels count too
+    play_calls += [{"kind": "incident", "failed_attempts": inc.get("attempts", [])} for inc in incidents]
     lesson_calls = [m["call"] for m in mem]
     duel_only = summarize_calls(play_calls)
     learning = summarize_calls(lesson_calls)
@@ -166,13 +167,15 @@ def site():
     pilot_examples = []
     for n, m in ((8, 16), (10, 16), (16, 16), (10, 32)):
         tm = total_matches(n, m, p)
-        pilot_examples.append({"coaches": n, "eval_matches": m, "matches": tm, "usd": round(tm * usd_duel, 2)})
+        upd = n * 2 * p["days"]
+        pilot_examples.append({"coaches": n, "eval_matches": m, "matches": tm, "lesson_updates": upd,
+                               "usd": round(tm * usd_duel + upd * learning["equivalent_usd"] / max(1, learning["calls"]), 2)})
     cost = {
         "spend_usd": 0, "model": next((c["model"] for c in play_calls if c.get("model")), None),
         "price_source": PRICE_SOURCE, "price_date": PRICE_DATE, "duels": n_duels,
         "duel_only": duel_only, "learning": learning, "total": both,
-        "per_duel_tokens": per_duel, "per_duel_usd": round(usd_duel, 4),
-        "per_duel_with_learning_usd": round(usd_with_learning, 4),
+        "per_duel_tokens": per_duel, "per_duel_usd": round(usd_duel, 6),
+        "per_duel_with_learning_usd": round(usd_with_learning, 6),
         "per_duel_seconds": round(duel_only["seconds"] / n_duels, 1),
         "per_call_seconds": round(duel_only["seconds"] / duel_only["calls"], 1),
         "lesson_updates": len(mem), "incidents": len(incidents),
@@ -187,7 +190,8 @@ def site():
     out.mkdir(parents=True, exist_ok=True)
     (out / "corpus.json").write_text(json.dumps(corpus, separators=(",", ":")))
     (out / "sim.json").write_text(json.dumps({"params": simres["params"], "reps": simres["reps_per_cell"],
-                                              "cells": simres["cells"], "rank_stability": simres["rank_stability"]},
+                                              "cells": simres["cells"], "rank_stability": simres["rank_stability"],
+                                              "impasse_sensitivity": simres["impasse_sensitivity"]},
                                              separators=(",", ":")))
     print("site data written:", n_duels, "duels,", len(mem), "memory events; per duel usd", round(usd_duel, 4))
     print(json.dumps({k: cost[k] for k in ("per_duel_tokens", "per_duel_usd", "per_duel_with_learning_usd",

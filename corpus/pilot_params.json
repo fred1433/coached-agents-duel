@@ -2,7 +2,7 @@
  "measured": {
   "replay_sd_points": 7.3,
   "impasse_rate": 0.0,
-  "first_mover_edge_points": 4.35,
+  "first_seat_gap_points": 4.35,
   "scenario_sd_points": 7.16,
   "agent_mean_sd_points": 2.65,
   "agent_spread_perm_p": 0.328,

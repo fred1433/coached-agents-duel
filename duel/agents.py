@@ -30,6 +30,30 @@ def _norm(text: str) -> str:
     return " ".join(text.lower().split()).rstrip(".")
 
 
+def lesson_problem(lesson, existing=()) -> str | None:
+    """Why a lesson cannot be stored, or None. Applied at creation, loading and every update."""
+    if not isinstance(lesson, str):
+        return "lesson must be a string"
+    if not lesson.strip():
+        return "empty lesson"
+    if word_count(lesson) > LESSON_MAX_WORDS:
+        return f"lesson has {word_count(lesson)} words, limit {LESSON_MAX_WORDS}"
+    if len(lesson) > LESSON_MAX_CHARS:
+        return f"lesson has {len(lesson)} characters, limit {LESSON_MAX_CHARS}"
+    if _norm(lesson) in {_norm(l) for l in existing}:
+        return "duplicate of a lesson already in memory"
+    return None
+
+
+def validate_memory(lessons) -> None:
+    if not isinstance(lessons, list) or len(lessons) > MEMORY_SLOTS:
+        raise ValueError(f"memory must be a list of at most {MEMORY_SLOTS} lessons")
+    for i, l in enumerate(lessons):
+        err = lesson_problem(l, lessons[:i])
+        if err:
+            raise ValueError(f"lesson {i + 1}: {err}")
+
+
 @dataclass
 class Agent:
     id: str
@@ -42,7 +66,8 @@ class Agent:
     history: list = field(default_factory=list)  # every memory version, append-only
 
     def __post_init__(self):
-        assert len(self.lessons) <= MEMORY_SLOTS
+        validate_memory(self.lessons)
+        self.lessons = list(self.lessons)  # never share the caller's list
         if not self.history:
             self.history.append({"version": self.version, "lessons": list(self.lessons), "change": "initial"})
 
@@ -76,18 +101,18 @@ class Agent:
         if eval_mode:
             raise MemoryLocked("eval=true: evaluation matches never write memory")
         before = list(self.lessons)
+        if not isinstance(update, dict):
+            update = {}
         decision = update.get("decision")
-        lesson = (update.get("lesson") or "").strip()
-        rec = {"source": source, "decision": decision, "lesson": lesson, "valid": True, "error": None,
-               "before_version": self.version, "before": before}
-        if decision in ("add", "replace") and not lesson:
-            rec.update(valid=False, error="empty lesson")
-        elif decision in ("add", "replace") and word_count(lesson) > LESSON_MAX_WORDS:
-            rec.update(valid=False, error=f"lesson has {word_count(lesson)} words, limit {LESSON_MAX_WORDS}")
-        elif decision in ("add", "replace") and len(lesson) > LESSON_MAX_CHARS:
-            rec.update(valid=False, error=f"lesson has {len(lesson)} characters, limit {LESSON_MAX_CHARS}")
-        elif decision in ("add", "replace") and _norm(lesson) in {_norm(l) for l in self.lessons}:
-            rec.update(valid=False, error="duplicate of a lesson already in memory")
+        lesson = update.get("lesson")
+        lesson = lesson.strip() if isinstance(lesson, str) else lesson
+        problem = lesson_problem(lesson, self.lessons) if decision in ("add", "replace") else None
+        rec = {"source": source, "decision": decision, "lesson": lesson if isinstance(lesson, str) else repr(lesson)[:200],
+               "valid": True, "error": None, "before_version": self.version, "before": before}
+        if not isinstance(decision, str) and decision is not None:
+            rec.update(valid=False, error="decision must be a string")
+        elif problem:
+            rec.update(valid=False, error=problem)
         elif decision == "add":
             if len(self.lessons) >= MEMORY_SLOTS:
                 rec.update(valid=False, error="memory full: add is not allowed, replace or discard")
@@ -145,7 +170,8 @@ ACTION_SCHEMA = {
 LESSON_SCHEMA = {
     "type": "object",
     "properties": {
-        "lesson": {"type": "string", "description": f"one lesson, at most {LESSON_MAX_WORDS} words"},
+        "lesson": {"type": "string", "maxLength": LESSON_MAX_CHARS,
+                   "description": f"one lesson, at most {LESSON_MAX_WORDS} words and {LESSON_MAX_CHARS} characters"},
         "decision": {"type": "string", "enum": ["add", "replace", "discard"]},
         "replace_slot": {"type": ["integer", "null"], "description": "1-based slot to overwrite when decision is replace"},
         "reason": {"type": "string"},
@@ -176,7 +202,7 @@ def lesson_prompt(agent: Agent, batch_summary: str, feedback: str | None) -> tup
     except that the coached one also gets the coach's note."""
     system = (f"You are {agent.name}, a trader in negotiation duels.\n{agent.personality}\n\n{RULES}\n\n"
               f"{lessons_block(agent.lessons)}\n\nYour memory holds at most {MEMORY_SLOTS} lessons of at most "
-              f"{LESSON_MAX_WORDS} words. Write one new lesson, then decide: add it (only if a slot is free), "
+              f"{LESSON_MAX_WORDS} words and {LESSON_MAX_CHARS} characters. Write one new lesson, then decide: add it (only if a slot is free), "
               f"replace an existing slot, or discard the new lesson if your current lessons are better.")
     if feedback:
         task = f"Your coach read the transcripts and wrote this note:\n\"{feedback}\"\n\nTurn the note into one lesson."

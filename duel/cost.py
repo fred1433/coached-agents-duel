@@ -41,22 +41,36 @@ def add(a: dict, b: dict) -> dict:
 
 
 def summarize_calls(calls: list) -> dict:
-    """Aggregate a list of call records (see runner.call_record), failed attempts included."""
+    """Aggregate call records (see runner.call_record). Every known attempt counts: tokens, equivalent
+    cost and duration of failed attempts are added to those of the call they preceded. A record with
+    kind "incident" carries only the attempts of a call that never succeeded. Usage priced at an
+    unknown model is not silently treated as free: it is counted in `unpriced`."""
     tot = {"input": 0, "cache_write_5m": 0, "cache_write_1h": 0, "cache_read": 0, "output": 0}
-    cost, n, missing, failed, seconds, cli_cost = 0.0, 0, 0, 0, 0.0, 0.0
-    for c in calls:
-        n += 1
-        if not c.get("usage"):
-            missing += 1
+    cost, n, missing, failed, seconds, cli_cost, unpriced = 0.0, 0, 0, 0, 0.0, 0.0, 0
+
+    def take(usage, model):
+        nonlocal tot, cost, unpriced
+        tot = add(tot, tokens(usage))
+        v = usd(usage, model)
+        if v is None:
+            unpriced += 1
         else:
-            tot = add(tot, tokens(c["usage"]))
-            v = usd(c["usage"], c.get("model"))
-            cost += v or 0.0
-        cli_cost += c.get("cli_cost_usd") or 0.0
-        seconds += (c.get("duration_ms") or 0) / 1000
+            cost += v
+
+    for c in calls:
+        if c.get("kind") != "incident":
+            n += 1
+            if not c.get("usage"):
+                missing += 1
+            else:
+                take(c["usage"], c.get("model"))
+            cli_cost += c.get("cli_cost_usd") or 0.0
+            seconds += (c.get("duration_ms") or 0) / 1000
         for f in c.get("failed_attempts") or []:
             failed += 1
+            seconds += f.get("seconds") or 0.0
             if f.get("usage"):
-                tot = add(tot, tokens(f["usage"]))
-    return {"calls": n, "calls_missing_usage": missing, "failed_attempts": failed, "tokens": tot,
-            "equivalent_usd": round(cost, 6), "cli_reported_usd": round(cli_cost, 6), "seconds": round(seconds, 1)}
+                take(f["usage"], f.get("model") or c.get("model"))
+    return {"calls": n, "calls_missing_usage": missing, "failed_attempts": failed, "unpriced": unpriced,
+            "tokens": tot, "equivalent_usd": round(cost, 6), "cli_reported_usd": round(cli_cost, 6),
+            "seconds": round(seconds, 1)}

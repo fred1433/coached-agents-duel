@@ -2,7 +2,7 @@
   "use strict";
   var GOODS = ["tea", "silk", "saffron"];
   var D = null, S = null;
-  var state = { duel: null, step: 0, revealed: false, agent: "hollis", round: 1, coaches: 10, tau: 5, noise: "pilot", m: 16 };
+  var state = { duel: null, step: 0, revealed: false, agent: "hollis", round: 2, coaches: 10, tau: 5, noise: "pilot", m: 16 };
   var $ = function (id) { return document.getElementById(id); };
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
@@ -105,29 +105,34 @@
     b.querySelectorAll("[data-seal]").forEach(function (s) { s.addEventListener("click", function () { state.revealed = !state.revealed; renderBoard(); renderReveal(); if (state.revealed) $("reveal-panel").scrollIntoView({ behavior: "smooth", block: "nearest" }); }); });
   }
 
-  function calcSide(d, r) {
-    var vals = d.scenario.values[r];
-    if (d.status === "agreed") {
-      var parts = GOODS.filter(function (g) { return d.agreement[r][g] > 0; }).map(function (g) { return d.agreement[r][g] + " " + g + " &times; " + vals[g]; });
-      return (parts.join(" + ") || "nothing") + " = " + d.values[r] + " of 30";
-    }
-    return "No deal: impasse value " + d.values[r] + " of 30";
+  function allocLine(alloc, vals) {
+    var parts = GOODS.filter(function (g) { return alloc[g] > 0; }).map(function (g) { return alloc[g] + " " + g + " &times; " + vals[g]; });
+    var v = GOODS.reduce(function (s, g) { return s + alloc[g] * vals[g]; }, 0);
+    return { text: (parts.join(" + ") || "nothing") + " = " + v + " of 30", value: v };
   }
 
   function renderReveal() {
-    var d = state.duel, panel = $("reveal-panel"), btn = $("reveal");
+    var d = state.duel, panel = $("reveal-panel"), btn = $("reveal"), top = $("top-reveal");
     btn.setAttribute("aria-expanded", state.revealed ? "true" : "false");
     btn.textContent = state.revealed ? "Seal the values again" : "Open the sealed values";
+    if (top) { top.setAttribute("aria-expanded", state.revealed ? "true" : "false"); top.textContent = state.revealed ? "Hide the scores" : "Reveal the scores"; }
     panel.hidden = !state.revealed;
     if (!state.revealed) return;
-    var html = "";
+    var t = tableAfter(d, state.step), last = state.step === d.actions.length - 1;
+    var mode = t.agreed ? "final" : t.open ? "open" : (last && d.status === "impasse") ? "impasse" : "none";
+    var title = mode === "final" ? "Final agreement scores" : mode === "open" ? "Value of open offer " + t.open.offer_id + " at move " + (state.step + 1) + ", if it were accepted" : mode === "impasse" ? "Final scores: no agreement" : "Nothing on the table at move " + (state.step + 1);
+    var html = '<p class="reveal-title">' + title + "</p>";
     ["first", "second"].forEach(function (r) {
       var v = d.scenario.values[r];
       html += '<div class="reveal-side"><h3 class="ink-' + r + '">' + esc(d.players[r].name) + "&rsquo;s hidden values</h3>";
       html += '<div class="values">' + GOODS.map(function (g) { return '<span><i class="tok ' + g + '"></i> ' + g + " " + v[g] + " each</span>"; }).join("") + "</div>";
-      html += '<div class="calc">' + calcSide(d, r) + '<span class="total">' + fmt(d.scores[r]) + "</span></div></div>";
+      if (mode === "final") html += '<div class="calc">' + allocLine(d.agreement[r], v).text + '<span class="total">' + fmt(d.scores[r]) + "</span></div>";
+      else if (mode === "open") { var x = allocLine(t.open.alloc[r], v); html += '<div class="calc is-provisional">' + x.text + '<span class="total">' + fmt(x.value / 30) + "</span></div>"; }
+      else if (mode === "impasse") html += '<div class="calc">No deal: impasse value ' + d.values[r] + ' of 30<span class="total">' + fmt(d.scores[r]) + "</span></div>";
+      else html += '<div class="calc is-provisional">No open offer. An impasse would give ' + d.scenario.impasse[r] + " of 30.</div>";
+      html += "</div>";
     });
-    html += '<p class="rule-line">Score = value received &divide; value of the whole pool to that side (30). The engine computes it from the logged actions; the line above lets you check it by hand. Values were never shown to the other side.</p>';
+    html += '<p class="rule-line">Score = value received &divide; value of the whole pool to that side (30). The engine computes the final scores from the logged actions; this panel lets you check them by hand at any move. Values were never shown to the other side.</p>';
     panel.innerHTML = html;
   }
 
@@ -179,13 +184,13 @@
     if (ag.learning === "none") { roundsEl.hidden = true; }
     else {
       roundsEl.hidden = false;
-      segButtons(roundsEl, [{ value: 1, html: "After series 1" }, { value: 2, html: "After series 2" }], state.round, function (v) { state.round = v; renderChain(); });
+      segButtons(roundsEl, [{ value: 1, html: "After series 1: fifth slot filled" }, { value: 2, html: "After series 2: memory full, one evicted" }], state.round, function (v) { state.round = v; renderChain(); });
     }
     var chain = $("chain");
     if (ag.learning === "none") {
       var n = D.duels.filter(function (d) { return d.players.first.agent === ag.id || d.players.second.agent === ag.id; }).length;
-      chain.innerHTML = '<div><div class="note-card"><span class="by-stamp">Never learns</span><p class="from">No note, no reflection</p><blockquote>' + esc(ag.name) + " is the copy that never learns. It played " + n + " duels with the same four starting lessons.</blockquote></div>" +
-        '<p class="arrow-step">Why it is here</p><p class="lesson">A copy that does not learn shows how much of any change comes from the opponents and scenarios rather than from memory.</p></div>' +
+      chain.innerHTML = '<div><div class="note-card"><span class="by-stamp">Never learns</span><p class="from">No note, no reflection</p><blockquote>' + esc(ag.name) + "&rsquo;s four starting lessons stay unchanged throughout the demo (" + n + " duels).</blockquote></div>" +
+        '<p class="arrow-step">What it shows</p><p class="lesson">An agent that never updates its memory. The planned experiment gives each coached agent its own matched non-learning copy; ' + esc(ag.name) + ' is not that copy.</p></div>' +
         ledger(ag.name, 1, 1, ag.lessons, ag.lessons, null, null) ;
       return;
     }
@@ -195,7 +200,7 @@
       left += '<div class="note-card"><span class="by-stamp">Demo coach<br>The AI Pipe</span><p class="from">Coach&rsquo;s note after series ' + state.round + ", written by The AI Pipe for this demo</p><blockquote>" + esc(ev.feedback) + "</blockquote></div>";
       left += '<p class="arrow-step">The lesson ' + esc(ag.name) + " wrote from the note</p>";
     } else {
-      left += '<div class="note-card"><span class="by-stamp">No coach</span><p class="from">No coach. Same match information, including the other side&rsquo;s revealed values</p><blockquote>' + esc(ag.name) + " reviewed its own series " + state.round + " duels and wrote its own lesson.</blockquote></div>";
+      left += '<div class="note-card"><span class="by-stamp">No coach</span><p class="from">No coach. The same type of post-match information, about its own duels, including the other side&rsquo;s revealed values</p><blockquote>' + esc(ag.name) + " reviewed its own series " + state.round + " duels and wrote its own lesson.</blockquote></div>";
       left += '<p class="arrow-step">The lesson ' + esc(ag.name) + " wrote for itself</p>";
     }
     left += '<p class="lesson">' + esc(ev.lesson) + "</p>";
@@ -233,7 +238,7 @@
   }
   function renderControls() {
     segButtons($("c-coaches"), [8, 10, 16].map(function (n) { return { value: n, html: String(n) }; }), state.coaches, function (v) { state.coaches = v; renderPower(); });
-    segButtons($("c-tau"), [{ value: 0, html: "none" }, { value: 5, html: "&plusmn;5 points" }, { value: 10, html: "&plusmn;10 points" }], state.tau, function (v) { state.tau = v; renderPower(); });
+    segButtons($("c-tau"), [{ value: 0, html: "none" }, { value: 5, html: "SD 5 points" }, { value: 10, html: "SD 10 points" }], state.tau, function (v) { state.tau = v; renderPower(); });
     segButtons($("c-noise"), [{ value: "low", html: "half" }, { value: "pilot", html: "as measured" }, { value: "high", html: "1.5&times;" }], state.noise, function (v) { state.noise = v; renderPower(); });
   }
   function renderChart() {
@@ -280,7 +285,7 @@
     svg.innerHTML = g;
     svg.querySelectorAll("rect[data-m]").forEach(function (r) { r.addEventListener("click", function () { state.m = +r.dataset.m; renderPower(); }); });
   }
-  function totalMatches(n, m) { var p = S.params; return n * 2 * p.train_matches_per_day * p.days + n * m * 7; }
+  function totalMatches(n, m) { var p = S.params; return n * 2 * p.train_matches_per_day * p.days + n * m * 10; }
   function renderPower() {
     renderControls();
     renderChart();
@@ -290,9 +295,12 @@
     $("tally-foot").innerHTML = [[c10, "pt10", "ink-first", "+10 point benefit"], [c5, "pt5", "ink-second", "+5 point benefit"], [c0, "pt0", "", "no benefit (false alarms)"]].map(function (x) {
       return '<div class="tally-cell"><span class="who ' + x[2] + '">' + x[3] + '</span><span class="fig">' + (x[0] === c0 ? fmt(100 * c0.reject_rate, 1) + "%" : pct(x[0].reject_rate)) + "</span></div>";
     }).join("") + '<div class="tally-stamp"><span class="stamp">at ' + state.m + " matches</span></div>";
-    var rs = S.rank_stability.find(function (r) { return r.coaches === state.coaches && r.eval_matches === state.m; });
-    $("rank-line").innerHTML = "Ranking the " + rs.versions + " frozen versions is shakier. If agents truly differ by about " + fmt(D.pilot.agent_mean_sd_points, 1) + " points, two runs of the same " + state.m + "-match evaluation would agree with a median rank correlation of " + fmt(rs.spearman_median) +
-      ". That spread is a hypothesis: shuffling the agent labels of the demo season gives one at least as large " + Math.round(100 * D.pilot.agent_spread_perm_p) + "% of the time (p = " + fmt(D.pilot.agent_spread_perm_p) + "), so it may be noise alone.";
+    var rs = S.rank_stability.find(function (r) { return r.coaches === state.coaches && r.eval_matches === state.m && r.noise === state.noise; });
+    $("rank-line").innerHTML = "Ranking, a stand-alone illustration: if " + rs.versions + " frozen versions differ by about " + fmt(D.pilot.agent_mean_sd_points, 1) + " points, two full runs of the same " + state.m + "-match evaluation would agree with a median rank correlation of " + fmt(rs.spearman_median) +
+      ". That spread comes from four agents in this small demo. It is an illustrative assumption, not an established skill difference.";
+    var im = S.impasse_sensitivity.filter(function (x) { return x.coaches === state.coaches && x.mu === 5; });
+    var i0 = im.find(function (x) { return x.impasse_rate === 0; }), i10 = im.find(function (x) { return x.impasse_rate === 0.1; });
+    $("impasse-line").innerHTML = "Impasses: with 10% of duels ending without a deal, detection of +5 points with " + state.coaches + " coaches (16 matches, SD 5) drops from " + pct(i0.reject_rate) + " to " + pct(i10.reject_rate) + ", because an impasse erases the benefit in that duel.";
     renderCost();
   }
   function renderCost() {
@@ -302,20 +310,20 @@
     var usd = matches * c.per_duel_usd + updates * perUpdate;
     var calls = c.duel_only.calls + c.learning.calls;
     $("cost").innerHTML =
-      '<div class="cost-line"><span class="k">Spent on model APIs for this demo</span><span class="v"><b>$0.</b> All ' + calls + " model calls ran on a Claude subscription through the Claude Code CLI, from an empty folder, with no tools, no settings files and no API key in the environment.</span></div>" +
-      '<div class="cost-line"><span class="k">Observed usage</span><span class="v">Per duel on average: <b>' + num(t.output) + "</b> output tokens, <b>" + num(t.cache_write_1h + t.cache_write_5m) + "</b> input tokens written to cache and <b>" + num(t.cache_read) + "</b> read from it, over " + fmt(c.duel_only.calls / c.duels, 1) + " calls and about " + Math.round(c.per_duel_seconds) + " seconds. " + c.lesson_updates + " lesson updates added " + num(c.learning.tokens.output) + " output tokens in all. " + (c.incidents ? c.incidents + " execution incidents." : "No failed call, no invalid action, no impasse.") + "</span></div>" +
-      '<div class="cost-line"><span class="k">Equivalent at the public API price</span><span class="v"><b>$' + fmt(c.per_duel_usd, 3) + "</b> per duel, <b>$" + fmt(c.per_duel_with_learning_usd, 3) + "</b> counting lesson updates, at the list price of " + esc(c.model) + ' read on ' + esc(c.price_date) + ' (<a href="' + esc(c.price_source) + '">source</a>), low effort setting. At that rate the pilot selected above, about <b>' + num(matches) + "</b> matches and " + num(updates) + " lesson updates, would come to about <b>$" + Math.round(usd) + "</b>.</span></div>";
+      '<div class="cost-line"><span class="k">Running cost, estimated</span><span class="v"><b>$' + fmt(c.per_duel_with_learning_usd, 3) + "</b> per duel including lesson updates, at the public API price of " + esc(c.model) + ' read on ' + esc(c.price_date) + ' (<a href="' + esc(c.price_source) + '">source</a>), low effort. The pilot selected above, about <b>' + num(matches) + "</b> matches and " + num(updates) + " lesson updates, would come to about <b>$" + Math.round(usd) + "</b>.</span></div>" +
+      '<div class="cost-line"><span class="k">Observed per duel</span><span class="v">' + fmt(c.duel_only.calls / c.duels, 1) + " model calls, about " + Math.round(c.per_duel_seconds) + " seconds, " + num(t.output) + " output tokens. No failed call, no invalid action, no impasse in " + c.duels + " duels.</span></div>" +
+      '<div class="cost-line"><span class="k">Spent for this demo</span><span class="v"><b>$0</b> on model APIs: all ' + calls + " calls ran on a Claude subscription.</span></div>";
   }
   function renderAssumptions() {
     var p = D.pilot, s = S.params;
     $("assumptions").innerHTML = "<ul>" +
       "<li>Replay noise: " + fmt(p.replay_sd_points, 1) + " points, measured on " + p.replays + " replays from " + p.calibration.length + " identical starting states (same personalities, memories, scenario, values and roles). It measures variability within one situation, not between coaches. Shown halved and multiplied by 1.5.</li>" +
-      "<li>First-mover edge: " + fmt(p.first_mover_edge_points, 1) + " points, measured over " + p.duels + " season duels; balanced by playing both roles.</li>" +
-      "<li>Spread between scenarios: " + fmt(p.scenario_sd_points, 1) + " points. Spread between agents: " + fmt(p.agent_mean_sd_points, 1) + " points, used as a hypothesis only: with four agents, a label permutation gives a spread at least this large with p = " + fmt(p.agent_spread_perm_p) + ".</li>" +
-      "<li>Impasses: " + Math.round(p.impasse_rate * p.duels) + " of " + p.duels + " season duels; simulated at that rate.</li>" +
+      "<li>First-seat score gap: " + fmt(p.first_seat_gap_points, 1) + " points over " + p.duels + " season duels, including value-profile effects (each seat keeps its value profile); balanced by playing both seats.</li>" +
+      "<li>Spread between scenarios: " + fmt(p.scenario_sd_points, 1) + " points. Spread between agents: " + fmt(p.agent_mean_sd_points, 1) + " points, from four agents in this small demo: an illustrative assumption for the ranking figure, not an established skill difference.</li>" +
+      "<li>Impasses: " + Math.round(p.impasse_rate * p.duels) + " of " + p.duels + " season duels; simulated at that rate, with a sensitivity at 5% and 10%. The benefit setting is the gain before impasses: an impasse gives the fixed impasse value whatever the branch.</li>" +
       "<li>Gain from self-reflection alone: +" + s.self_gain_mean + " &plusmn; " + s.self_gain_sd + " points, assumed. It cancels in the comparison.</li>" +
-      "<li>Average benefit of coaching (0, +5, +10 points) and how much it varies between coaches (none, &plusmn;5, &plusmn;10): hypotheses, not measurements.</li>" +
-      "<li>Schedule: " + s.train_matches_per_day + " training matches per learning branch per day for " + s.days + " days, one lesson update per day; evaluations at the start, day 7 and day 14 against a frozen panel on held-out scenarios, with no memory writes.</li>" +
+      "<li>Average benefit of coaching (0, +5, +10 points) and its standard deviation between coach-agent pairs (none, SD 5, SD 10, normal draws): hypotheses, not measurements. They are assumed end-of-pilot effects; the simulation does not model how agents learn.</li>" +
+      "<li>Schedule: " + s.train_matches_per_day + " training matches per learning branch per day for " + s.days + " days, one lesson update per day, each training match a separate duel against a frozen panel opponent; evaluations at the start, day 7 and day 14, plus a second full evaluation of the final versions, against a frozen panel on held-out scenarios, with no memory writes.</li>" +
       "<li>Analysis: for each coach, coached minus self-reflective score on the same evaluation matches; two-sided t-test across coaches at 5%. " + num(S.reps) + " simulated pilots per setting, fixed seed.</li></ul>";
   }
 
@@ -326,6 +334,9 @@
     $("prev").addEventListener("click", function () { if (state.step > 0) { state.step--; renderSheet(); } });
     $("next").addEventListener("click", function () { if (state.step < state.duel.actions.length - 1) { state.step++; renderSheet(); } });
     $("reveal").addEventListener("click", function () { state.revealed = !state.revealed; renderBoard(); renderReveal(); });
+    $("top-replay").addEventListener("click", function () { state.step = 0; renderSheet(); });
+    $("top-reveal").addEventListener("click", function () { state.revealed = !state.revealed; renderBoard(); renderReveal(); if (state.revealed) $("reveal-panel").scrollIntoView({ behavior: "smooth", block: "nearest" }); });
+    $("full-memory").addEventListener("click", function () { state.agent = "hollis"; state.round = 2; renderChain(); $("coach-title").scrollIntoView({ behavior: "smooth", block: "start" }); });
     renderChain();
     renderPower();
     renderAssumptions();

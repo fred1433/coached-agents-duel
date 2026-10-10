@@ -125,6 +125,8 @@ class Match:
             return True, "", alloc
         if kind == "accept":
             oid = act.get("offer_id")
+            if not isinstance(oid, str):
+                return False, "offer_id must be a string", None
             if self.open_offer is None:
                 return False, "accept with no open offer", None
             if oid != self.open_offer["id"]:
@@ -137,6 +139,8 @@ class Match:
                 return False, "cannot accept your own offer", None
             return True, "", None
         if kind == "reject":
+            if not isinstance(act.get("offer_id"), str):
+                return False, "offer_id must be a string", None
             if self.open_offer is None or self.open_offer["by"] == role:
                 return False, "nothing from the other side to reject", None
             if act.get("offer_id") != self.open_offer["id"]:
@@ -153,6 +157,8 @@ class Match:
         n = self.turn + 1
         entry = {"n": n, "role": role, "valid": False, "error": None, "action": None,
                  "message": "", "offer_id": None, "open_after": None}
+        if act is not None and not isinstance(act, dict):
+            act = None
         if act is None:
             entry["error"] = "unparseable output"
         else:

@@ -93,8 +93,17 @@ def rank_stability(rng, reps, n_versions, m, sigma, p, spread_sd):
 
 
 def total_matches(n, m, p):
-    training = n * 2 * p["train_matches_per_day"] * p["days"]  # H and S branches
-    evaluation = n * m * (1 + 2 + 2 + 2)  # shared start, then H and S at day 7 and 14, frozen copy at 7 and 14
+    """Matches in the proposed two-week schedule.
+
+    Training: each learning branch (human-coached and self-reflective) plays train_matches_per_day
+    duels per day against frozen panel opponents; each is a separate match. If two learning branches
+    ever meet, that single match serves both and must be counted once by the scheduler.
+    Evaluation, m matches per version: the shared starting state (1), the three branches at day 7 (3)
+    and day 14 (3), and a second full evaluation of the three final versions (3), used to check that
+    the ranking of frozen versions is reproducible.
+    """
+    training = n * 2 * p["train_matches_per_day"] * p["days"]
+    evaluation = n * m * (1 + 3 + 3 + 3)
     return training + evaluation
 
 
@@ -113,13 +122,26 @@ def run(params: dict, reps: int = 2000) -> dict:
                         r = simulate_cell(rng, reps, n, m, mu, tau, sigma, p)
                         cells.append({"coaches": n, "mu": mu, "tau": tau, "noise": sname, "sigma": round(sigma, 2),
                                       "eval_matches": m, "total_matches": total_matches(n, m, p), **r})
+    # Stand-alone illustration: versions drawn independently with the assumed spread, not the paired triplets.
     ranks = []
     for n in coaches:
-        for m in ms:
-            med, p10 = rank_stability(rng, 500, 3 * n, m, sig, p, p["personality_sd"])
-            ranks.append({"coaches": n, "versions": 3 * n, "eval_matches": m, "spearman_median": round(med, 3),
-                          "spearman_p10": round(p10, 3)})
-    return {"params": p, "reps_per_cell": reps, "seed": SEED, "cells": cells, "rank_stability": ranks}
+        for sname, sigma in sigmas.items():
+            for m in ms:
+                med, p10 = rank_stability(rng, 500, 3 * n, m, sigma, p, p["personality_sd"])
+                ranks.append({"coaches": n, "versions": 3 * n, "noise": sname, "eval_matches": m,
+                              "spearman_median": round(med, 3), "spearman_p10": round(p10, 3)})
+    # Impasse sensitivity. mu is the benefit before impasses: an impasse replaces the score by the fixed
+    # impasse value whatever the branch, so the benefit actually observed shrinks as impasses grow.
+    imp = []
+    for n in coaches:
+        for rate in (0.0, 0.05, 0.10):
+            q = {**p, "impasse_rate": rate}
+            for mu in mus:
+                r = simulate_cell(rng, reps, n, 16, mu, 5.0, sig, q)
+                imp.append({"coaches": n, "impasse_rate": rate, "mu": mu, "tau": 5.0, "noise": "pilot",
+                            "eval_matches": 16, **r})
+    return {"params": p, "reps_per_cell": reps, "seed": SEED, "cells": cells, "rank_stability": ranks,
+            "impasse_sensitivity": imp}
 
 
 def pick(cells, **kw):
