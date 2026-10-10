@@ -12,8 +12,9 @@ Rules (also written in README.md):
   to one side. A new offer replaces the open offer (it is a counter-offer).
 - An acceptance names the id of the opponent's current open offer. Accepting your
   own offer, a superseded offer, or when nothing is open is invalid.
-- A rejection closes the opponent's open offer; nothing is on the table until the
-  next offer. Rejecting when no opponent offer is open is invalid.
+- A rejection names the id of the opponent's open offer and closes it; nothing is
+  on the table until the next offer. Rejecting a wrong id, or when no opponent
+  offer is open, is invalid.
 - An invalid action costs the turn (it still counts as one of the 8) and is logged.
 - The message attached to an action is cheap talk and binds nothing.
 - An agreement is terminal. With no agreement after 8 actions, both sides get the
@@ -138,6 +139,8 @@ class Match:
         if kind == "reject":
             if self.open_offer is None or self.open_offer["by"] == role:
                 return False, "nothing from the other side to reject", None
+            if act.get("offer_id") != self.open_offer["id"]:
+                return False, f"reject must name the open offer {self.open_offer['id']}, not {act.get('offer_id')!r}", None
             return True, "", None
         return False, f"unknown action {kind!r}", None
 

@@ -97,9 +97,25 @@ def pilot():
     agents = json.loads((C / "agents.json").read_text())
     prof = profiles(duels, agents)
     pers_sd = st.pstdev([100 * p["mean_score"] for p in prof.values()])
+    # Is that spread more than noise? Shuffle agent labels over the season's scores (seeded).
+    import random
+    pool, sizes = [], []
+    for a in agents:
+        xs = [100 * d["scores"][r] for d in duels for r in ROLES if d["players"][r]["agent"] == a["id"]]
+        pool += xs
+        sizes.append(len(xs))
+    rng, hits, N = random.Random(20261010), 0, 10000
+    for _ in range(N):
+        rng.shuffle(pool)
+        means, i = [], 0
+        for k in sizes:
+            means.append(st.mean(pool[i:i + k]))
+            i += k
+        hits += st.pstdev(means) >= pers_sd - 1e-9
+    perm_p = hits / N
     out = {"measured": {"replay_sd_points": round(sigma, 2) if sigma is not None else None,
                         "impasse_rate": round(imp, 3), "first_mover_edge_points": round(role, 2),
-                        "scenario_sd_points": round(scen_sd, 2), "agent_mean_sd_points": round(pers_sd, 2),
+                        "scenario_sd_points": round(scen_sd, 2), "agent_mean_sd_points": round(pers_sd, 2), "agent_spread_perm_p": round(perm_p, 3),
                         "duels": len(duels), "replays": len(cal), "calibration": rows},
            "sim_inputs": {"sigma_rep": max(round(sigma, 2), 1.0), "impasse_rate": round(imp, 3),
                           "role_effect": round(abs(role), 2), "scenario_sd": round(max(scen_sd, 1.0), 2),
@@ -132,6 +148,7 @@ def site():
     agents = json.loads((C / "agents.json").read_text())
     notes = {n: json.loads((C / f"coach_notes_{n}.json").read_text()) for n in (1, 2) if (C / f"coach_notes_{n}.json").exists()}
     play_calls = [c for d in duels for c in d["calls"]]
+    play_calls += [c for inc in incidents for c in inc.get("partial_calls", [])]  # calls of interrupted duels count too
     lesson_calls = [m["call"] for m in mem]
     duel_only = summarize_calls(play_calls)
     learning = summarize_calls(lesson_calls)

@@ -15,7 +15,7 @@ from __future__ import annotations
 import itertools
 import json
 import sys
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -99,29 +99,48 @@ def schedule(series: int):
     return out
 
 
-def run_batch(jobs, eval_mode: bool, series: str, keep_prompts_first: bool = False):
-    llm = ClaudeCLI()
+def run_batch(jobs, eval_mode: bool, series: str, keep_prompts_first: bool = False, llm=None, workers: int = 4):
+    """Run duels in parallel. Each finished duel is appended at once. An exhausted quota cancels
+    the queue cleanly; other incidents are logged (with the usage of the calls already made)
+    and the duel is left to be replayed later from the same state."""
+    llm = llm or ClaudeCLI()
     done = {r["id"] for r in read_jsonl("duels.jsonl")}
+    todo = [j for j in jobs if j[0] not in done]
 
     def one(job):
         did, first, second, s = job
-        if did in done:
-            return None
-        try:
-            return play_duel(did, {"first": first, "second": second}, s, llm, series, eval_mode,
-                             keep_prompts=keep_prompts_first and did.endswith("01"))
-        except QuotaExhausted as e:
-            append("incidents.jsonl", {"duel": did, "kind": e.kind, "attempts": e.attempts})
-            raise
-        except ExecutionIncident as e:  # hors score: logged, the duel is replayed later from the same state
-            append("incidents.jsonl", {"duel": did, "kind": e.kind, "attempts": e.attempts})
-            return None
+        return play_duel(did, {"first": first, "second": second}, s, llm, series, eval_mode,
+                         keep_prompts=keep_prompts_first and did.endswith("01"))
 
-    with ThreadPoolExecutor(4) as ex:
-        for rec in ex.map(one, jobs):
-            if rec:
-                append("duels.jsonl", rec)
-                print(rec["id"], rec["status"], rec["scores"], "invalid", rec["invalid_actions"], flush=True)
+    def handle(fut):
+        did = futures[fut]
+        try:
+            rec = fut.result()
+        except ExecutionIncident as e:  # quota or other incident: never scored, replayed later from the same state
+            append("incidents.jsonl", {"duel": did, "kind": e.kind, "attempts": e.attempts,
+                                       "partial_calls": getattr(e, "partial_calls", [])})
+            return e
+        append("duels.jsonl", rec)
+        print(rec["id"], rec["status"], rec["scores"], "invalid", rec["invalid_actions"], flush=True)
+        return None
+
+    quota = None
+    with ThreadPoolExecutor(workers) as ex:
+        futures = {ex.submit(one, j): j[0] for j in todo}
+        handled = set()
+        for fut in as_completed(futures):
+            handled.add(fut)
+            err = handle(fut)
+            if isinstance(err, QuotaExhausted):
+                quota = err
+                for f in futures:
+                    f.cancel()  # queued duels never start; running ones finish below
+                break
+        for fut in futures:
+            if fut not in handled and not fut.cancelled():
+                handle(fut)  # waits for a duel that was already running, saves it
+    if quota:
+        raise quota
 
 
 def series(n: int):
@@ -132,13 +151,13 @@ def series(n: int):
     run_batch(jobs, False, f"series {n}", keep_prompts_first=True)
 
 
-def lessons(n: int):
+def lessons(n: int, only: str | None = None):
     agents = load_agents()
     notes = json.loads(path(f"coach_notes_{n}.json").read_text()) if path(f"coach_notes_{n}.json").exists() else {}
     recs = [r for r in read_jsonl("duels.jsonl") if r["series"] == f"series {n}"]
     llm = ClaudeCLI()
     for a in agents.values():
-        if a.learning == "none":
+        if a.learning == "none" or (only and a.id != only):
             continue
         mine = [r for r in recs if a.id in (r["players"]["first"]["agent"], r["players"]["second"]["agent"])]
         fb = None
@@ -171,7 +190,7 @@ if __name__ == "__main__":
     elif cmd == "series":
         series(int(sys.argv[2]))
     elif cmd == "lessons":
-        lessons(int(sys.argv[2]))
+        lessons(int(sys.argv[2]), sys.argv[3] if len(sys.argv) > 3 else None)
     elif cmd == "calibrate":
         calibrate()
     else:

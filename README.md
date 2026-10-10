@@ -7,7 +7,7 @@ Replay page: https://theaipipe.com/demos/coached-duel/
 ## What works today
 
 - **The duel, end to end.** Structured actions (offer, accept, reject) validated by schema and then by the engine; 8 alternating actions; scores computed by code. 48 real duels were played by a model and recorded in `corpus/duels.jsonl`, with every action, message, memory version and token count.
-- **The coaching loop.** Coach note, lesson written by the agent, memory update (add, replace a slot, or discard), versioned memory, next match loaded with that exact version. Two rounds were run; in the second, every learning agent's memory was full and each one chose a slot to replace (`corpus/memory_events.jsonl`).
+- **The coaching loop.** Coach note, lesson written by the agent, memory update (add, replace a slot, or discard), versioned memory, next match loaded with that exact version. Two rounds were run; in the second, every learning agent's memory was full and each one chose a slot to replace (`corpus/memory_events.jsonl`). Each duel's record holds the exact lessons it was played with.
 - **The branches the analysis needs.** Four agents: two coached, one self-reflective (same inputs minus the coach's note, same limits), one that never learns.
 - **Replays from identical states** to measure luck alone: 3 configurations x 4 replays, flagged `eval=true`, which forbids any memory write.
 - **A power simulation** that applies exactly the planned analysis (`sim/power.py`), fed with the noise measured on those replays.
@@ -19,17 +19,18 @@ Replay page: https://theaipipe.com/demos/coached-duel/
 - The coach's notes were written by The AI Pipe for the demo. There is one human source, not independent coaches.
 - The replay noise comes from 3 configurations only, so the simulation also shows half and 1.5 times that noise.
 - All 36 season duels reached an agreement, with no invalid action. Impasses are simulated at that observed rate (zero); harder scenarios would change it.
-- One lesson in the corpus misreads a rule (Hollis, round 2: it assumes a refused counter leaves the other offer open). The engine still enforced the rule. It is left as recorded.
+- A first run used two demo coach notes that misdescribed the logs; one of them also misstated a rule and the agent's lesson repeated the mistake. Both notes were rewritten to match the logs, and every lesson update and duel that depended on them was replayed: 30 duels and 4 lesson updates (159 extra model calls). The first run is kept, unused, in `corpus/superseded/`.
 - Building this demo took a few hours. The real experiment is a separate two-week run with real coaches.
 
 ## Check every score without any model account
 
 ```
+python3 -m pip install -r requirements.txt   # numpy, scipy, pytest
 python3 scripts/rescore.py      # replays the 48 logged duels through the engine, recomputes every score
-python3 -m pytest -q tests      # 22 model-free tests, including log/page score concordance
+python3 -m pytest -q tests      # 27 model-free tests, including log/page score concordance
 ```
 
-Expected: `48 duels replayed, 48 agreements, 0 mismatches`, then `22 passed`.
+Expected: `48 duels replayed, 48 agreements, 0 mismatches`, then `27 passed`.
 
 ## The duel, specified
 
@@ -37,12 +38,16 @@ Expected: `48 duels replayed, 48 agreements, 0 mismatches`, then `22 passed`.
 - **Turns.** 8 actions in total, alternating. The first mover acts on 1, 3, 5, 7.
 - **Offer.** A complete allocation in whole units; stocks are conserved. A new offer replaces the open offer (a counter-offer).
 - **Accept.** Names the id of the opponent's current open offer. Accepting your own offer, a superseded offer, an unknown id, or nothing is invalid.
-- **Reject.** Closes the opponent's open offer; nothing is on the table until the next offer. Rejecting when no opponent offer is open is invalid.
+- **Reject.** Names the id of the opponent's open offer and closes it; nothing is on the table until the next offer. A wrong id, or no opponent offer open, is invalid.
 - **Talk.** The message attached to an action binds nothing.
 - **End.** An acceptance is terminal; any later action raises `MatchOver`. Without agreement after 8 actions, each side gets its impasse value, fixed before the match (6 of 30).
 - **Score.** Value received divided by the value of the whole pool to that side. Both scores and the agreement rate are reported.
-- **Errors.** An invalid or unparseable action costs the turn and is counted. A network failure, timeout or exhausted quota is an execution incident: never scored, retried at most twice, every attempt logged and its usage counted. An exhausted quota stops the run cleanly; finished duels are already saved and the run resumes where it stopped.
+- **Errors.** An invalid or unparseable action costs the turn and is counted. A network failure, timeout, overload or exhausted quota is an execution incident: never scored, and logged in `corpus/incidents.jsonl` with the usage of the calls the interrupted duel had already made. Transient errors (network, timeout, overload, rate limiting) are retried at most twice. An exhausted subscription quota cancels the duels still queued; each finished duel is written as soon as it ends, a duel already running is allowed to finish, and the run resumes where it stopped (tested with a stand-in CLI).
 - **Same objective for all.** Every agent maximises its own score. No personality is asked to care about the other side.
+
+#### Memory limits
+
+At most 5 lessons, each at most 50 words and 400 characters; a lesson identical to one already kept is refused; `replace_slot` must be a real slot number (a boolean is refused). Any record flagged `eval=true` in a batch makes the memory update refuse to run, whatever the caller passes.
 
 ### What each model call sees
 
@@ -70,54 +75,54 @@ Profiles measured on the 36 demo season duels (share of the pool's value):
 
 | Agent | Learning | First offer claims | Concession per offer | Actions to agreement | Impasses | Mean score |
 |---|---|---|---|---|---|---|
-| Hollis | coached | 0.84 | 0.10 | 4.9 | 0 | 0.68 |
-| Marlow | coached | 0.78 | 0.10 | 4.5 | 0 | 0.65 |
-| Juno | self-reflective | 0.74 | 0.07 | 4.6 | 0 | 0.60 |
-| Tamsin | never learns | 0.78 | 0.06 | 5.1 | 0 | 0.65 |
+| Hollis | coached | 0.84 | 0.11 | 5.2 | 0 | 0.66 |
+| Marlow | coached | 0.77 | 0.10 | 4.6 | 0 | 0.65 |
+| Juno | self-reflective | 0.73 | 0.06 | 4.7 | 0 | 0.60 |
+| Tamsin | never learns | 0.79 | 0.05 | 5.2 | 0 | 0.65 |
 
 ## What a two-week pilot could detect
 
 `python3 sim/power.py 3000` (about 20 seconds). The simulation estimates what a two-week pilot could detect under explicit assumptions. It applies exactly the primary analysis above and never uses a true value. Score points are percent of the pool's value.
 
-Measured inputs (from `corpus/pilot_params.json`): replay noise 6.8 points (12 replays from 3 identical states; it measures variability within one situation, not between coaches), first-mover edge 7.2 points, spread between scenarios 7.1 points, spread between agents 2.8 points, impasses 0 of 36. Hypotheses: average benefit of coaching 0, +5 or +10 points; variation of that benefit between coach-personality pairs none, 5 or 10 points; self-reflection gain +3 points (cancels in the comparison). Schedule: 4 training matches per learning branch per day for 14 days, evaluations at the start, day 7 and day 14.
+Measured inputs (from `corpus/pilot_params.json`): replay noise 7.3 points (12 replays from 3 identical states; it measures variability within one situation, not between coaches), first-mover edge 4.4 points, spread between scenarios 7.2 points, impasses 0 of 36. Hypotheses: average benefit of coaching 0, +5 or +10 points; variation of that benefit between coach-personality pairs none, 5 or 10 points; self-reflection gain +3 points (cancels in the comparison); spread between agents 2.6 points (the spread of the four demo agents' means, used only as a hypothesis: shuffling the agent labels over the season's scores gives a spread at least that large with p = 0.33, so it may be noise alone). Schedule: 4 training matches per learning branch per day for 14 days, evaluations at the start, day 7 and day 14.
 
 With the measured noise and 16 evaluation matches per frozen version:
 
 | Coaches | Variation between coaches | +10 detected | +5 detected | False alarms at 0 | 95% interval, +/- points | Matches in two weeks |
 |---|---|---|---|---|---|---|
-| 8 | none | 100% | 100% | 5.6% | 1.9 | 1,792 |
-| 8 | +/-5 points | 99% | 59% | 5.2% | 4.5 | 1,792 |
-| 8 | +/-10 points | 67% | 22% | 5.3% | 8.2 | 1,792 |
-| 10 | none | 100% | 100% | 4.7% | 1.7 | 2,240 |
-| 10 | +/-5 points | 100% | 72% | 4.9% | 3.8 | 2,240 |
-| 10 | +/-10 points | 79% | 29% | 4.3% | 7.1 | 2,240 |
-| 16 | none | 100% | 100% | 4.8% | 1.3 | 3,584 |
-| 16 | +/-5 points | 100% | 91% | 4.6% | 2.9 | 3,584 |
-| 16 | +/-10 points | 95% | 44% | 4.6% | 5.4 | 3,584 |
+| 8 | none | 100% | 99% | 5.6% | 2.1 | 1,792 |
+| 8 | +/-5 points | 99% | 58% | 5.2% | 4.5 | 1,792 |
+| 8 | +/-10 points | 66% | 22% | 5.2% | 8.2 | 1,792 |
+| 10 | none | 100% | >99% | 4.7% | 1.8 | 2,240 |
+| 10 | +/-5 points | >99% | 71% | 5.0% | 3.9 | 2,240 |
+| 10 | +/-10 points | 78% | 28% | 4.2% | 7.2 | 2,240 |
+| 16 | none | 100% | 100% | 4.8% | 1.4 | 3,584 |
+| 16 | +/-5 points | 100% | 90% | 4.7% | 3.0 | 3,584 |
+| 16 | +/-10 points | 95% | 44% | 4.5% | 5.4 | 3,584 |
 
-Reading it: more matches make each agent's score more precise; more coaches show whether the benefit generalises. When the benefit varies a lot between coaches, going from 4 to 64 evaluation matches barely moves detection (10 coaches, +5 points, variation 10: 25% to 30%), while going from 8 to 16 coaches does. Ranking stability of frozen versions (rank correlation between two independent runs of the same evaluation, median): 0.39 at 4 matches, 0.71 at 16, 0.90 at 64. Every cell, including half and 1.5 times the noise, is in `sim/results.json`; `tests/test_sim.py` checks that false alarms at zero benefit stay near 5%.
+Reading it: more matches make each agent's score more precise; more coaches show whether the benefit generalises. When the benefit varies a lot between coaches, going from 4 to 64 evaluation matches barely moves detection (10 coaches, +5 points, variation 10: 25% to 30%), while going from 8 to 16 coaches does. Ranking stability of frozen versions is a hypothesis-driven figure: if agents truly differ by the spread above, two independent runs of the same evaluation agree with a median rank correlation of 0.34 at 4 matches, 0.66 at 16 and 0.87 at 64 (10 coaches). Every cell, including half and 1.5 times the noise, is in `sim/results.json`; across all 135 zero-benefit cells false alarms run from 4.0% to 6.0%, and `tests/test_sim.py` checks that they stay near 5%.
 
 ## Cost of running the duel
 
 Three separate lines:
 
 1. **Additional API spend for this demo: 0 USD.** Every call ran on a Claude subscription through the Claude Code CLI.
-2. **Observed usage** (raw usage returned by the CLI, all 238 calls, no failed attempt): per duel on average 4.8 calls, 1,808 output tokens, 5,716 input tokens written to cache, 6,324 read from cache and about 10 uncached, about 19 seconds. The 6 lesson updates used 1,424 output tokens in all. Total: 274,378 cache-write, 303,560 cache-read, 464 uncached input and 86,770 output tokens for the duels.
-3. **Equivalent API cost, estimated** at the public list price of the only model run, `claude-sonnet-5-5`, read on 2026-10-10 at https://platform.claude.com/docs/en/about-claude/pricing (input 2 USD, 1-hour cache write 4 USD, cache read 0.10 USD, output 10 USD per million tokens): **0.042 USD per duel, 0.044 USD counting lesson updates** ("duel only" vs "duel + learning"). The CLI's own cost field gives the same total (1.996 USD for the 48 duels). A pilot of 10 coaches with 16 evaluation matches per version, about 2,240 matches and 280 lesson updates, would come to about 98 USD at that rate. Effort was set to low; another model or effort level changes these numbers.
+2. **Observed usage** (raw usage returned by the CLI, all 248 calls behind the current corpus, no failed attempt): per duel on average 5.0 calls, 1,913 output tokens, 6,115 input tokens written to cache, 6,584 read from cache and about 10 uncached, about 20 seconds. The 6 lesson updates used 1,587 output tokens in all. Total for the duels: 293,524 cache-write, 316,018 cache-read, 484 uncached input and 91,804 output tokens. The replaced part of the first run (30 duels, 4 lesson updates) used 149 more calls on the same subscription, kept in `corpus/superseded/`.
+3. **Equivalent API cost, estimated** at the public list price of the only model run, `claude-sonnet-5-5`, read on 2026-10-10 at https://platform.claude.com/docs/en/about-claude/pricing (input 2 USD, 1-hour cache write 4 USD, cache read 0.10 USD, output 10 USD per million tokens): **0.044 USD per duel, 0.047 USD counting lesson updates** ("duel only" vs "duel + learning"). The CLI's own cost field gives the same total (2.12 USD for the 48 duels). A pilot of 10 coaches with 16 evaluation matches per version, about 2,240 matches and 280 lesson updates, would come to about 104 USD at that rate. Effort was set to low; another model or effort level changes these numbers.
 
-A character count of the prompts and outputs (about 890,000 characters for 665,000 reported tokens) is kept only as a rough control: the CLI adds its own schema and framing.
+A character count of the prompts and outputs (about 945,000 characters for 702,000 reported tokens) is kept only as a rough control: the CLI adds its own schema and framing.
 
 ## Model calls, isolated
 
 Recorded on the machine that ran the season: `claude --version` = `2.1.296 (Claude Code)`. `claude --help` lists both `--json-schema <schema>` ("JSON Schema for structured output validation") and `--safe-mode` ("Start with all customizations ... disabled"). `claude auth status` reports `"authMethod": "claude.ai"` (subscription); `--bare` is not used.
 
-Each call (`duel/llm.py`) runs from an empty temporary folder with `--system-prompt` (replaces the default), `--tools ""`, `--strict-mcp-config`, `--setting-sources ""`, `--safe-mode`, `--no-session-persistence`, `--output-format json`, `--json-schema`, `--model sonnet`, `--effort low`. Every `ANTHROPIC_*` variable is removed from the child environment; `env | grep -i anthropic` printed nothing during the run. A quota message stops the run cleanly. The schema check never replaces the engine's own validation.
+Each call (`duel/llm.py`) runs from an empty temporary folder with `--system-prompt` (replaces the default), `--tools ""`, `--strict-mcp-config`, `--setting-sources ""`, `--safe-mode`, `--no-session-persistence`, `--output-format json`, `--json-schema`, `--model sonnet`, `--effort low`. Every `ANTHROPIC_*` variable is removed from the child environment; `env | grep -i anthropic` printed nothing during the run. An exhausted-quota message stops the run cleanly; overload and rate-limit messages are retried. The schema check never replaces the engine's own validation.
 
 There is no seed or temperature control in the CLI, and fixing the draw would erase the luck being measured. Seeds exist for the scenario generator and the simulation only.
 
 ## Group round (written, not built)
 
-Duel first; the group format reuses the same agents and memory. Proposed rules, to be built as a paid prototype with its cost measured:
+The duel comes first; the group round would be built on top of the duel's agents and memory store. Proposed rules, to be built as a paid prototype with its cost measured:
 
 - **Who speaks next.** Round-robin, five seats; the first speaker rotates every sitting so no seat is always first. Each agent gets the same speaking budget (same number of turns, same word cap per turn). An agent may pass; a pass uses its turn.
 - **Agreement.** At any turn an agent may table a complete split; it is adopted when a majority accepts it before the last round. No adopted split by the end: everyone gets the impasse value.
@@ -135,6 +140,6 @@ Duel first; the group format reuses the same agents and memory. Proposed rules, 
 - `scripts/rescore.py` model-free replay and rescoring
 - `scripts/build_data.py` simulation inputs and page data from the corpus
 - `sim/power.py` the simulation; `sim/results.json` its output
-- `corpus/` everything recorded: duels, memory events, coach notes, agents, scenarios
+- `corpus/` everything recorded: duels, memory events, coach notes, agents, scenarios; `corpus/superseded/` the first run, kept for the record
 - `site/` the static replay page
 - `tests/` model-free tests

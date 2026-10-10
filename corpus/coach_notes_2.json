@@ -1,6 +1,6 @@
 {
  "hollis": {"written_by": "The AI Pipe, demo coach", "after": "series 2",
-  "note": "In s2-01 you accepted at action 3, with five actions left, and gave up both saffron. One counter asking for a single saffron back would have cost you nothing if refused."},
+  "note": "In s2-06 you ended with two tea and two saffron while Tamsin kept all three silk, worth 6 to you. Tamsin's own offer o3 had given you all the silk, a sign it mattered little to them: ask for the goods they give away easily."},
  "marlow": {"written_by": "The AI Pipe, demo coach", "after": "series 2",
-  "note": "In s2-10 you read from Tamsin's own offers that silk was their focus and built the split around it, for 0.80. Judge their top good by what they keep in their offers, not only by what they say."}
+  "note": "In s2-09 you accepted at action 3 and gave up the saffron you had asked for: 0.80 instead of 0.90. Restating your offer would have replaced theirs, a real risk, but with five actions left there was time to come back to it."}
 }

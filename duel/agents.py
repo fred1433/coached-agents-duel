@@ -15,6 +15,7 @@ from .engine import GOODS, TOTAL_ACTIONS, public_view
 
 MEMORY_SLOTS = 5
 LESSON_MAX_WORDS = 50
+LESSON_MAX_CHARS = 400
 
 
 class MemoryLocked(Exception):
@@ -23,6 +24,10 @@ class MemoryLocked(Exception):
 
 def word_count(text: str) -> int:
     return len(text.split())
+
+
+def _norm(text: str) -> str:
+    return " ".join(text.lower().split()).rstrip(".")
 
 
 @dataclass
@@ -79,6 +84,10 @@ class Agent:
             rec.update(valid=False, error="empty lesson")
         elif decision in ("add", "replace") and word_count(lesson) > LESSON_MAX_WORDS:
             rec.update(valid=False, error=f"lesson has {word_count(lesson)} words, limit {LESSON_MAX_WORDS}")
+        elif decision in ("add", "replace") and len(lesson) > LESSON_MAX_CHARS:
+            rec.update(valid=False, error=f"lesson has {len(lesson)} characters, limit {LESSON_MAX_CHARS}")
+        elif decision in ("add", "replace") and _norm(lesson) in {_norm(l) for l in self.lessons}:
+            rec.update(valid=False, error="duplicate of a lesson already in memory")
         elif decision == "add":
             if len(self.lessons) >= MEMORY_SLOTS:
                 rec.update(valid=False, error="memory full: add is not allowed, replace or discard")
@@ -86,7 +95,7 @@ class Agent:
                 self.lessons.append(lesson)
         elif decision == "replace":
             slot = update.get("replace_slot")
-            if not isinstance(slot, int) or not (1 <= slot <= len(self.lessons)):
+            if isinstance(slot, bool) or not isinstance(slot, int) or not (1 <= slot <= len(self.lessons)):
                 rec.update(valid=False, error=f"replace_slot {slot!r} out of range")
             else:
                 rec["evicted"] = self.lessons[slot - 1]
@@ -99,7 +108,7 @@ class Agent:
         if rec["valid"] and decision != "discard":
             self.version += 1
         assert len(self.lessons) <= MEMORY_SLOTS
-        assert all(word_count(l) <= LESSON_MAX_WORDS for l in self.lessons)
+        assert all(word_count(l) <= LESSON_MAX_WORDS and len(l) <= LESSON_MAX_CHARS for l in self.lessons)
         rec["after_version"] = self.version
         rec["after"] = list(self.lessons)
         self.history.append({"version": self.version, "lessons": list(self.lessons), "change": rec})
@@ -110,8 +119,8 @@ RULES = f"""How the duel works:
 - Two traders split a pool of goods: tea, silk and saffron, in whole units. Every unit must go to one side.
 - Each side has private values per unit. You know only yours. The whole pool is worth 30 points to you.
 - There are {TOTAL_ACTIONS} actions in total, alternating between the two sides. Then the duel ends.
-- On your action you may: make an offer (a complete split; it replaces any open offer), accept the other side's
-  open offer by its id, or reject the other side's open offer (this closes it).
+- On your action you may: make an offer (a complete split; it replaces any open offer, including theirs), accept
+  the other side's open offer by its id, or reject the other side's open offer by its id (this closes it).
 - Your message is talk only. Nothing in a message is binding; only offers and acceptances count.
 - An invalid action (impossible split, wrong id, accepting your own offer) wastes your action.
 - If no offer is accepted by the end, you receive only your impasse value.

@@ -1,10 +1,11 @@
 {
  "measured": {
-  "replay_sd_points": 6.78,
+  "replay_sd_points": 7.3,
   "impasse_rate": 0.0,
-  "first_mover_edge_points": 7.22,
-  "scenario_sd_points": 7.08,
-  "agent_mean_sd_points": 2.78,
+  "first_mover_edge_points": 4.35,
+  "scenario_sd_points": 7.16,
+  "agent_mean_sd_points": 2.65,
+  "agent_spread_perm_p": 0.328,
   "duels": 36,
   "replays": 12,
   "calibration": [
@@ -14,22 +15,22 @@
     "scenario": "S1",
     "replays": 4,
     "scores_first": [
-     0.733333,
+     0.5,
      0.7,
      0.466667,
-     0.7
+     0.5
     ],
     "scores_second": [
-     0.466667,
-     0.6,
      0.533333,
-     0.4
+     0.6,
+     0.733333,
+     0.533333
     ],
     "actions": [
      7,
+     6,
      7,
-     7,
-     6
+     7
     ],
     "agreed": 4
    },
@@ -39,7 +40,7 @@
     "scenario": "S2",
     "replays": 4,
     "scores_first": [
-     0.5,
+     0.6,
      0.6,
      0.6,
      0.6
@@ -51,10 +52,10 @@
      0.6
     ],
     "actions": [
-     6,
-     6,
      5,
-     5
+     6,
+     6,
+     6
     ],
     "agreed": 4
    },
@@ -65,31 +66,31 @@
     "replays": 4,
     "scores_first": [
      0.8,
-     0.8,
+     0.9,
      0.8,
      0.8
     ],
     "scores_second": [
-     0.8,
      0.7,
+     0.6,
      0.8,
      0.8
     ],
     "actions": [
      3,
+     4,
      3,
-     3,
-     3
+     5
     ],
     "agreed": 4
    }
   ]
  },
  "sim_inputs": {
-  "sigma_rep": 6.78,
+  "sigma_rep": 7.3,
   "impasse_rate": 0.0,
-  "role_effect": 7.22,
-  "scenario_sd": 7.08,
-  "personality_sd": 2.78
+  "role_effect": 4.35,
+  "scenario_sd": 7.16,
+  "personality_sd": 2.65
  }
 }

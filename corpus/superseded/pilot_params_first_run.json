@@ -1,0 +1,95 @@
+{
+ "measured": {
+  "replay_sd_points": 6.78,
+  "impasse_rate": 0.0,
+  "first_mover_edge_points": 7.22,
+  "scenario_sd_points": 7.08,
+  "agent_mean_sd_points": 2.78,
+  "duels": 36,
+  "replays": 12,
+  "calibration": [
+   {
+    "first": "hollis",
+    "second": "marlow",
+    "scenario": "S1",
+    "replays": 4,
+    "scores_first": [
+     0.733333,
+     0.7,
+     0.466667,
+     0.7
+    ],
+    "scores_second": [
+     0.466667,
+     0.6,
+     0.533333,
+     0.4
+    ],
+    "actions": [
+     7,
+     7,
+     7,
+     6
+    ],
+    "agreed": 4
+   },
+   {
+    "first": "juno",
+    "second": "tamsin",
+    "scenario": "S2",
+    "replays": 4,
+    "scores_first": [
+     0.5,
+     0.6,
+     0.6,
+     0.6
+    ],
+    "scores_second": [
+     0.6,
+     0.6,
+     0.6,
+     0.6
+    ],
+    "actions": [
+     6,
+     6,
+     5,
+     5
+    ],
+    "agreed": 4
+   },
+   {
+    "first": "marlow",
+    "second": "juno",
+    "scenario": "S3",
+    "replays": 4,
+    "scores_first": [
+     0.8,
+     0.8,
+     0.8,
+     0.8
+    ],
+    "scores_second": [
+     0.8,
+     0.7,
+     0.8,
+     0.8
+    ],
+    "actions": [
+     3,
+     3,
+     3,
+     3
+    ],
+    "agreed": 4
+   }
+  ]
+ },
+ "sim_inputs": {
+  "sigma_rep": 6.78,
+  "impasse_rate": 0.0,
+  "role_effect": 7.22,
+  "scenario_sd": 7.08,
+  "personality_sd": 2.78
+ }
+}

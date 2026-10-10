@@ -204,3 +204,77 @@ def test_logs_rescore_and_page_agree():
         by_id = {d["id"]: d for d in data["duels"]}
         for rec in (json.loads(l) for l in duels.read_text().splitlines() if l.strip()):
             assert by_id[rec["id"]]["scores"] == rec["scores"]
+
+
+# --- corrections after review -----------------------------------------------------------------
+def test_reject_must_name_the_open_offer():
+    m = Match(SCEN)
+    m.apply("first", offer((3, 0, 1), (1, 3, 1)))
+    e = m.apply("second", {"action": "reject", "offer_id": "o99", "message": ""})
+    assert not e["valid"] and m.open_offer["id"] == "o1"
+    m.apply("first", offer((3, 0, 1), (1, 3, 1)))  # o2
+    assert m.apply("second", {"action": "reject", "offer_id": "o2", "message": ""})["valid"]
+
+
+def test_memory_refuses_eval_records_even_without_flag():
+    a = agent()
+    with pytest.raises(MemoryLocked):
+        update_memory(a, [{"id": "cal1-r1", "eval": True}], ScriptedLLM([]), "note")
+
+
+def test_memory_char_cap_duplicates_and_boolean_slot():
+    from duel.agents import LESSON_MAX_CHARS
+    a = agent(lessons=["Hold your offer once."])
+    assert not a.apply_update({"decision": "add", "lesson": "x" * (LESSON_MAX_CHARS + 1)}, "coach")["valid"]
+    assert not a.apply_update({"decision": "add", "lesson": "hold your offer   once"}, "coach")["valid"]
+    r = a.apply_update({"decision": "replace", "replace_slot": True, "lesson": "Something new."}, "coach")
+    assert not r["valid"] and a.lessons == ["Hold your offer once."]
+
+
+class KeyedLLM:
+    """Healthy duels end in two calls (offer, accept); any prompt naming 'Quota' hits an exhausted quota."""
+
+    def __init__(self, quota_on_call=1, accept=True, delay=0.0):
+        self.quota_on_call, self.seen, self.accept, self.delay = quota_on_call, {}, accept, delay
+
+    def call(self, system, user, schema):
+        import time
+        from duel.llm import CallResult, QuotaExhausted
+        time.sleep(self.delay)
+        if "Quota" in system:
+            k = self.seen.get("q", 0) + 1
+            self.seen["q"] = k
+            if k >= self.quota_on_call:
+                raise QuotaExhausted("quota", "usage limit reached", [{"kind": "quota"}])
+        view = json.loads(user[user.index("{"): user.rindex("}") + 1])
+        if self.accept and view["open_offer"] and view["open_offer"]["by"] == "them":
+            a = {"action": "accept", "offer_id": view["open_offer"]["id"], "you_get": None, "they_get": None, "message": "ok"}
+        else:
+            a = offer((3, 0, 1), (1, 3, 1))
+        return CallResult(a, json.dumps(a), {"input_tokens": 3, "output_tokens": 2}, "fake", 1, 1, 0.0)
+
+
+def test_quota_stops_cleanly_and_keeps_finished_duels(tmp_path, monkeypatch):
+    import scripts.season as season
+    monkeypatch.setattr(season, "CORPUS", tmp_path)
+    jobs = [("h1", agent("a"), agent("b"), SCEN), ("q1", agent("quota"), agent("b"), SCEN),
+            ("h2", agent("a"), agent("b"), SCEN), ("h3", agent("a"), agent("b"), SCEN)]
+    from duel.llm import QuotaExhausted
+    with pytest.raises(QuotaExhausted):
+        season.run_batch(jobs, False, "t", llm=KeyedLLM(delay=0.05), workers=1)
+    saved = [json.loads(l)["id"] for l in (tmp_path / "duels.jsonl").read_text().splitlines()]
+    # h1 finished before the quota and is saved; a duel already running may finish; the rest is cancelled
+    assert saved[0] == "h1" and "h3" not in saved
+    inc = [json.loads(l) for l in (tmp_path / "incidents.jsonl").read_text().splitlines()]
+    assert inc[0]["duel"] == "q1" and inc[0]["kind"] == "quota"
+
+
+def test_incident_keeps_partial_calls_for_the_cost_log(tmp_path, monkeypatch):
+    import scripts.season as season
+    monkeypatch.setattr(season, "CORPUS", tmp_path)
+    jobs = [("q1", agent("quota"), agent("b"), SCEN)]
+    from duel.llm import QuotaExhausted
+    with pytest.raises(QuotaExhausted):
+        season.run_batch(jobs, False, "t", llm=KeyedLLM(quota_on_call=2, accept=False), workers=1)
+    inc = json.loads((tmp_path / "incidents.jsonl").read_text().splitlines()[0])
+    assert len(inc["partial_calls"]) == 2 and inc["partial_calls"][0]["usage"]["output_tokens"] == 2

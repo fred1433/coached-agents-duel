@@ -184,7 +184,7 @@
     var chain = $("chain");
     if (ag.learning === "none") {
       var n = D.duels.filter(function (d) { return d.players.first.agent === ag.id || d.players.second.agent === ag.id; }).length;
-      chain.innerHTML = '<div><div class="note-card"><p class="from">No note, no reflection</p><blockquote>' + esc(ag.name) + " is the copy that never learns. It played " + n + " duels with the same four starting lessons.</blockquote></div>" +
+      chain.innerHTML = '<div><div class="note-card"><span class="by-stamp">Never learns</span><p class="from">No note, no reflection</p><blockquote>' + esc(ag.name) + " is the copy that never learns. It played " + n + " duels with the same four starting lessons.</blockquote></div>" +
         '<p class="arrow-step">Why it is here</p><p class="lesson">A copy that does not learn shows how much of any change comes from the opponents and scenarios rather than from memory.</p></div>' +
         ledger(ag.name, 1, 1, ag.lessons, ag.lessons, null, null) ;
       return;
@@ -192,18 +192,15 @@
     var ev = D.memory_events.find(function (e) { return e.agent === ag.id && e.round === state.round; });
     var left = "";
     if (ev.source === "coach") {
-      left += '<div class="note-card"><p class="from">Coach&rsquo;s note after series ' + state.round + ", written by The AI Pipe for this demo</p><blockquote>" + esc(ev.feedback) + "</blockquote></div>";
+      left += '<div class="note-card"><span class="by-stamp">Demo coach<br>The AI Pipe</span><p class="from">Coach&rsquo;s note after series ' + state.round + ", written by The AI Pipe for this demo</p><blockquote>" + esc(ev.feedback) + "</blockquote></div>";
       left += '<p class="arrow-step">The lesson ' + esc(ag.name) + " wrote from the note</p>";
     } else {
-      left += '<div class="note-card"><p class="from">No coach. Same match information, including the other side&rsquo;s revealed values</p><blockquote>' + esc(ag.name) + " reviewed its own series " + state.round + " duels and wrote its own lesson.</blockquote></div>";
+      left += '<div class="note-card"><span class="by-stamp">No coach</span><p class="from">No coach. Same match information, including the other side&rsquo;s revealed values</p><blockquote>' + esc(ag.name) + " reviewed its own series " + state.round + " duels and wrote its own lesson.</blockquote></div>";
       left += '<p class="arrow-step">The lesson ' + esc(ag.name) + " wrote for itself</p>";
     }
     left += '<p class="lesson">' + esc(ev.lesson) + "</p>";
     var dec = ev.decision === "add" ? "Added to a free slot" : ev.decision === "replace" ? "Replaced slot " + ev.slot + " (memory was full)" : "Discarded; memory kept as it was";
     left += '<p class="decision"><b>' + dec + ".</b> " + (ev.reason ? "Its reason: " + esc(ev.reason) : "") + "</p>";
-    if (ag.id === "hollis" && state.round === 2) {
-      left += '<p class="ref-note">Referee&rsquo;s note: under the rules a counter-offer replaces the other side&rsquo;s open offer, so this lesson misreads a rule. The engine still enforces it. This is the kind of slip a real coach would catch in the next note.</p>';
-    }
     var nextSeries = "series " + (state.round + 1);
     var next = D.duels.find(function (d) { return d.series === nextSeries && (d.players.first.agent === ag.id || d.players.second.agent === ag.id); });
     chain.innerHTML = "<div>" + left + "</div>" + ledger(ag.name, ev.before_version, ev.after_version, ev.before, ev.after, ev, next);
@@ -224,7 +221,7 @@
       var role = next.players.first.agent === ev.agent ? "first" : "second";
       var loaded = JSON.stringify(next.players[role].lessons) === JSON.stringify(after);
       html += '<div class="ledger-foot"><span>Loaded into ' + esc(next.id) + " against " + esc(next.players[other(role)].name) + ", memory v" + next.players[role].version + ". " +
-        (loaded ? '<span class="ok">Matches the logged prompt.</span>' : "") + '</span><button type="button" class="btn" data-open="' + esc(next.id) + '">Open ' + esc(next.id) + " on the sheet</button></div>";
+        (loaded ? '<span class="loaded">Matches the memory logged with this duel</span>' : "") + '</span><button type="button" class="btn" data-open="' + esc(next.id) + '">Open ' + esc(next.id) + " on the sheet</button></div>";
     }
     return html + "</div>";
   }
@@ -241,37 +238,44 @@
   }
   function renderChart() {
     var svg = $("chart"), cw = svg.parentNode.clientWidth || 640;
-    var W = Math.round(Math.max(340, Math.min(640, cw))), H = W < 500 ? 330 : 380, L = W < 500 ? 52 : 64, R = W < 500 ? 96 : 150, T = 24, B = 58;
+    var narrow = cw < 520;
+    var W = Math.round(Math.max(340, Math.min(700, cw))), H = narrow ? 340 : 400, L = narrow ? 44 : 54, R = narrow ? 74 : 132, T = 48, B = 34;
     svg.setAttribute("viewBox", "0 0 " + W + " " + H);
-    var x = function (m) { return L + (Math.log2(m) - 2) / 4 * (W - L - R); };
+    var colW = (W - L - R) / MS.length;
+    var cx = function (i) { return L + colW * (i + 0.5); };
     var y = function (v) { return T + (1 - v) * (H - T - B); };
-    var g = '<desc id="chart-desc">Share of simulated pilots that detect a benefit, by evaluation matches per version</desc>';
+    var g = '<desc id="chart-desc">Share of simulated pilots that detect a coaching benefit, for each number of evaluation matches per frozen version</desc>';
+    var cur = MS.indexOf(state.m);
+    g += '<rect class="col-current" x="' + (L + colW * cur) + '" y="0" width="' + colW + '" height="' + H + '"/>';
     [0, 0.2, 0.4, 0.6, 0.8, 1].forEach(function (v) {
-      g += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '"/>';
-      g += '<text class="tick" x="' + (L - 10) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + Math.round(v * 100) + "%</text>";
+      g += '<line class="rule" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '"/>';
+      g += '<text class="tick" x="' + (L - 8) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + Math.round(v * 100) + "%</text>";
     });
-    MS.forEach(function (m) {
-      g += '<line class="grid" x1="' + x(m) + '" x2="' + x(m) + '" y1="' + T + '" y2="' + (H - B) + '"/>';
-      g += '<text class="tick" x="' + x(m) + '" y="' + (H - B + 20) + '" text-anchor="middle">' + m + "</text>";
+    MS.forEach(function (m, i) {
+      if (i > 0) g += '<line class="col-rule" x1="' + (L + colW * i) + '" x2="' + (L + colW * i) + '" y1="0" y2="' + H + '"/>';
+      g += '<text class="colno' + (i === cur ? " is-current" : "") + '" x="' + cx(i) + '" y="30" text-anchor="middle">' + m + "</text>";
     });
-    g += '<line class="focus-line" x1="' + x(state.m) + '" x2="' + x(state.m) + '" y1="' + T + '" y2="' + (H - B) + '"/>';
-    g += '<line class="axis" x1="' + L + '" x2="' + (W - R) + '" y1="' + (H - B) + '" y2="' + (H - B) + '"/>';
-    g += '<line class="axis" x1="' + L + '" x2="' + L + '" y1="' + T + '" y2="' + (H - B) + '"/>';
-    g += '<text class="axis-title" x="' + ((L + W - R) / 2) + '" y="' + (H - 12) + '" text-anchor="middle">Evaluation matches per frozen version (click to choose)</text>';
-    g += '<text class="axis-title" transform="translate(16 ' + ((T + H - B) / 2) + ') rotate(-90)" text-anchor="middle">Simulated pilots that detect it</text>';
-    var series = [[10, "l10", "pt10", "+10 points"], [5, "l5", "pt5", "+5 points"], [0, "l0", "pt0", W < 500 ? "none" : "no benefit"]];
+    g += '<line class="col-rule" x1="' + L + '" x2="' + L + '" y1="0" y2="' + H + '"/>';
+    g += '<line class="col-rule" x1="' + (W - R) + '" x2="' + (W - R) + '" y1="0" y2="' + H + '"/>';
+    g += '<line class="frame" x1="0" x2="' + W + '" y1="' + (T - 8) + '" y2="' + (T - 8) + '"/>';
+    g += '<text class="axis-title" x="' + ((L + W - R) / 2) + '" y="' + (H - 10) + '" text-anchor="middle">evaluation matches per frozen version, choose a column</text>';
+    var series = [[10, "l10", "pt10", narrow ? "+10" : "+10 points"], [5, "l5", "pt5", narrow ? "+5" : "+5 points"], [0, "l0", "pt0", narrow ? "none" : "no benefit"]];
     var ends = [];
     series.forEach(function (s) {
-      var pts = MS.map(function (m) { return [x(m), y(cell(s[0], m).reject_rate)]; });
+      var pts = MS.map(function (m, i) { return [cx(i), y(cell(s[0], m).reject_rate)]; });
       g += '<polyline class="line ' + s[1] + '" points="' + pts.map(function (p) { return p.join(","); }).join(" ") + '"/>';
-      pts.forEach(function (p, i) { g += '<circle class="' + s[2] + '" cx="' + p[0] + '" cy="' + p[1] + '" r="' + (MS[i] === state.m ? 5.5 : 3.5) + '"/>'; });
+      pts.forEach(function (p, i) {
+        var sz = i === cur ? 10 : 7;
+        g += '<rect class="' + s[2] + '" x="' + (p[0] - sz / 2) + '" y="' + (p[1] - sz / 2) + '" width="' + sz + '" height="' + sz + '" rx="1.5"/>';
+        if (i === cur) g += '<ellipse class="pencil-ring" cx="' + p[0] + '" cy="' + p[1] + '" rx="13" ry="10" transform="rotate(-12 ' + p[0] + " " + p[1] + ')"/>';
+      });
       ends.push({ y: pts[pts.length - 1][1], cls: s[2], text: s[3] });
     });
     ends.sort(function (a, b) { return a.y - b.y; });
-    for (var i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 18) ends[i].y = ends[i - 1].y + 18;
-    ends.forEach(function (e) { g += '<text class="lab ' + e.cls + '" x="' + (W - R + 12) + '" y="' + (e.y + 5) + '">' + e.text + "</text>"; });
-    MS.forEach(function (m) {
-      g += '<rect data-m="' + m + '" x="' + (x(m) - 26) + '" y="' + T + '" width="52" height="' + (H - T - B + 28) + '" fill="transparent" style="cursor:pointer"><title>' + m + " matches</title></rect>";
+    for (var i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 20) ends[i].y = ends[i - 1].y + 20;
+    ends.forEach(function (e) { g += '<text class="lab ' + e.cls + '" x="' + (W - R + 10) + '" y="' + (e.y + 5) + '">' + e.text + "</text>"; });
+    MS.forEach(function (m, i) {
+      g += '<rect data-m="' + m + '" x="' + (L + colW * i) + '" y="0" width="' + colW + '" height="' + H + '" fill="transparent" style="cursor:pointer"><title>' + m + " evaluation matches</title></rect>";
     });
     svg.innerHTML = g;
     svg.querySelectorAll("rect[data-m]").forEach(function (r) { r.addEventListener("click", function () { state.m = +r.dataset.m; renderPower(); }); });
@@ -281,10 +285,14 @@
     renderControls();
     renderChart();
     var c10 = cell(10, state.m), c5 = cell(5, state.m), c0 = cell(0, state.m);
-    $("readout").innerHTML = "With <b>" + state.coaches + " coaches</b> and <b>" + state.m + " evaluation matches</b> per frozen version, a +10 point average benefit is detected in <b>" + pct(c10.reject_rate) +
-      "</b> of simulated pilots and a +5 point one in <b>" + pct(c5.reject_rate) + "</b>. With no benefit at all, <b>" + fmt(100 * c0.reject_rate, 1) + "%</b> raise a false alarm. The 95% interval on the average benefit is about <b>&plusmn;" + fmt(c5.ci_width / 2, 1) + " points</b>. A point is one percent of the pool&rsquo;s value to the agent.";
+    $("readout").innerHTML = "With <b>" + state.coaches + " coaches</b> and <b>" + state.m + " evaluation matches</b> per frozen version, the 95% interval on the average benefit is about <b>&plusmn;" + fmt(c5.ci_width / 2, 1) +
+      " points</b>. A point is one percent of the pool&rsquo;s value to the agent. The figures below are the share of " + num(S.reps) + " simulated pilots in which the test finds a benefit.";
+    $("tally-foot").innerHTML = [[c10, "pt10", "ink-first", "+10 point benefit"], [c5, "pt5", "ink-second", "+5 point benefit"], [c0, "pt0", "", "no benefit (false alarms)"]].map(function (x) {
+      return '<div class="tally-cell"><span class="who ' + x[2] + '">' + x[3] + '</span><span class="fig">' + (x[0] === c0 ? fmt(100 * c0.reject_rate, 1) + "%" : pct(x[0].reject_rate)) + "</span></div>";
+    }).join("") + '<div class="tally-stamp"><span class="stamp">at ' + state.m + " matches</span></div>";
     var rs = S.rank_stability.find(function (r) { return r.coaches === state.coaches && r.eval_matches === state.m; });
-    $("rank-line").innerHTML = "Ranking the " + rs.versions + " frozen versions: two independent runs of the same " + state.m + "-match evaluation agree with a median rank correlation of " + fmt(rs.spearman_median) + " (one run in ten below " + fmt(rs.spearman_p10) + ").";
+    $("rank-line").innerHTML = "Ranking the " + rs.versions + " frozen versions is shakier. If agents truly differ by about " + fmt(D.pilot.agent_mean_sd_points, 1) + " points, two runs of the same " + state.m + "-match evaluation would agree with a median rank correlation of " + fmt(rs.spearman_median) +
+      ". That spread is a hypothesis: shuffling the agent labels of the demo season gives one at least as large " + Math.round(100 * D.pilot.agent_spread_perm_p) + "% of the time (p = " + fmt(D.pilot.agent_spread_perm_p) + "), so it may be noise alone.";
     renderCost();
   }
   function renderCost() {
@@ -303,7 +311,7 @@
     $("assumptions").innerHTML = "<ul>" +
       "<li>Replay noise: " + fmt(p.replay_sd_points, 1) + " points, measured on " + p.replays + " replays from " + p.calibration.length + " identical starting states (same personalities, memories, scenario, values and roles). It measures variability within one situation, not between coaches. Shown halved and multiplied by 1.5.</li>" +
       "<li>First-mover edge: " + fmt(p.first_mover_edge_points, 1) + " points, measured over " + p.duels + " season duels; balanced by playing both roles.</li>" +
-      "<li>Spread between scenarios: " + fmt(p.scenario_sd_points, 1) + " points; spread between agents: " + fmt(p.agent_mean_sd_points, 1) + " points (four agents, a rough figure).</li>" +
+      "<li>Spread between scenarios: " + fmt(p.scenario_sd_points, 1) + " points. Spread between agents: " + fmt(p.agent_mean_sd_points, 1) + " points, used as a hypothesis only: with four agents, a label permutation gives a spread at least this large with p = " + fmt(p.agent_spread_perm_p) + ".</li>" +
       "<li>Impasses: " + Math.round(p.impasse_rate * p.duels) + " of " + p.duels + " season duels; simulated at that rate.</li>" +
       "<li>Gain from self-reflection alone: +" + s.self_gain_mean + " &plusmn; " + s.self_gain_sd + " points, assumed. It cancels in the comparison.</li>" +
       "<li>Average benefit of coaching (0, +5, +10 points) and how much it varies between coaches (none, &plusmn;5, &plusmn;10): hypotheses, not measurements.</li>" +

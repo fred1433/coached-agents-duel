@@ -23,7 +23,8 @@ from dataclasses import dataclass, field
 
 MODEL = os.environ.get("DUEL_MODEL", "sonnet")
 EFFORT = os.environ.get("DUEL_EFFORT", "low")
-QUOTA_MARKERS = ("usage limit", "rate limit", "quota", "limit reached", "429", "overloaded")
+# An exhausted subscription quota stops the run. Overload and rate-limit errors are transient: retried.
+QUOTA_MARKERS = ("usage limit", "quota", "limit reached")
 
 
 class ExecutionIncident(Exception):

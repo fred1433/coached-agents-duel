@@ -17,7 +17,7 @@
 <main>
   <header class="intro">
     <h1>Coaching or luck, on a score sheet you can check by hand</h1>
-    <p class="lede">Two agents split four tea, three silk and two saffron in eight alternating actions. Each one has values the other cannot see and a memory of at most five lessons. The engine validates every action and computes both scores. The model never decides who won.</p>
+    <p class="lede">Two agents split four tea, three silk and two saffron in eight alternating actions. Each one has values the other cannot see and a memory of at most five lessons. The engine validates every action and computes both scores: results come from rules, not from a model's judgement.</p>
     <p class="provenance">Recorded model runs. Demo coaching written by The AI Pipe.</p>
   </header>
 
@@ -67,21 +67,22 @@
   <section class="power-section" aria-labelledby="power-title">
     <h2 id="power-title">What a two-week pilot could detect</h2>
     <p class="section-lede">The simulation estimates what a two-week pilot could detect under explicit assumptions. Each coach's agent is split into a coached branch and a self-reflective branch from the same saved state; after two weeks both are frozen and play the same evaluation matches. The benefit of coaching is the gap between the two, coach by coach, tested across coaches.</p>
-    <div class="power-grid">
-      <div class="power-chart">
-        <div class="power-controls">
-          <div class="ctl"><span class="ctl-label">Coaches</span><div class="seg seg-small" id="c-coaches"></div></div>
-          <div class="ctl"><span class="ctl-label">How much the benefit varies between coaches</span><div class="seg seg-small" id="c-tau"></div></div>
-          <div class="ctl"><span class="ctl-label">Replay noise</span><div class="seg seg-small" id="c-noise"></div></div>
-        </div>
-        <svg id="chart" viewBox="0 0 640 380" role="img" aria-labelledby="chart-desc"><desc id="chart-desc"></desc></svg>
+    <article class="sheet tally" aria-label="Simulated pilots">
+      <div class="sheet-head tally-head">
+        <div class="field"><span class="label">Coaches</span><div class="seg seg-small" id="c-coaches"></div></div>
+        <div class="field"><span class="label">How much the benefit varies between coaches</span><div class="seg seg-small" id="c-tau"></div></div>
+        <div class="field"><span class="label">Replay noise</span><div class="seg seg-small" id="c-noise"></div></div>
       </div>
-      <div class="power-read">
-        <p class="readout" id="readout"></p>
-        <p class="aside">More matches make each agent's score more precise. More coaches show whether the benefit holds beyond one coach. When the gap varies a lot between coaches, extra matches stop helping and only more coaches do.</p>
-        <p class="aside" id="rank-line"></p>
-        <p class="aside">A non-significant result is reported as the range of benefits still compatible with the data. "Undetermined at this size" is a possible outcome.</p>
+      <div class="tally-body">
+        <div class="tally-chart"><svg id="chart" viewBox="0 0 640 380" role="img" aria-labelledby="chart-desc"><desc id="chart-desc"></desc></svg></div>
+        <div class="tally-read"><p class="readout" id="readout"></p></div>
       </div>
+      <div class="tally-foot" id="tally-foot"></div>
+    </article>
+    <div class="power-notes">
+      <p class="aside">More matches make each agent's score more precise. More coaches show whether the benefit holds beyond one coach. When the gap varies a lot between coaches, extra matches stop helping and only more coaches do.</p>
+      <p class="aside" id="rank-line"></p>
+      <p class="aside">A non-significant result is reported as the range of benefits still compatible with the data. "Undetermined at this size" is a possible outcome.</p>
     </div>
     <div class="cost" id="cost"></div>
     <details class="assumptions">

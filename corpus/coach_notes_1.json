@@ -2,5 +2,5 @@
  "hollis": {"written_by": "The AI Pipe, demo coach", "after": "series 1",
   "note": "Against Tamsin in s1-06 you moved on every one of your turns and finished at 0.47, below an even split. When the other side keeps countering, repeat your last offer once before conceding again; you still had actions to spare."},
  "marlow": {"written_by": "The AI Pipe, demo coach", "after": "series 1",
-  "note": "Your swap in s1-08 was right, but after giving Juno the tea you also added a silk and ended at 0.47. Once your cheap goods are spent, stop adding sweeteners and restate your offer."}
+  "note": "In s1-08 your last offer gave Juno a tea (worth 4 to you) for a silk (worth 2 to you), and you ended at 0.47. When you have to move, give up what is worth least to you, never what is worth most."}
 }

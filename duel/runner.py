@@ -6,6 +6,7 @@ import hashlib
 
 from .agents import ACTION_SCHEMA, LESSON_SCHEMA, Agent, MemoryLocked, lesson_prompt, play_prompt
 from .engine import GOODS, ROLES, Match, Scenario
+from .llm import ExecutionIncident
 
 
 def _h(s: str) -> str:
@@ -26,7 +27,11 @@ def play_duel(duel_id: str, players: dict, scenario: Scenario, llm, series: str,
     while not m.over:
         role = m.actor
         system, user = play_prompt(players[role], m, role)
-        res = llm.call(system, user, ACTION_SCHEMA)
+        try:
+            res = llm.call(system, user, ACTION_SCHEMA)
+        except ExecutionIncident as e:
+            e.partial_calls = calls  # successful calls of the interrupted duel, kept for the cost log
+            raise
         calls.append(call_record(res, "play", m.turn + 1))
         if keep_prompts:
             prompts.append({"n": m.turn + 1, "role": role, "system": system, "user": user})
@@ -78,7 +83,7 @@ def batch_summary(records: list, agent_id: str) -> str:
 
 def update_memory(agent: Agent, records: list, llm, feedback: str | None, eval_mode: bool = False) -> dict:
     """One memory update. Coached agents pass the coach's note; self-reflective ones pass None."""
-    if eval_mode:
+    if eval_mode or any(r.get("eval") for r in records):
         raise MemoryLocked("eval=true: evaluation matches never write memory")
     summary = batch_summary(records, agent.id)
     system, user = lesson_prompt(agent, summary, feedback)
