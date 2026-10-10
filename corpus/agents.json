@@ -1,0 +1,664 @@
+[
+ {
+  "id": "hollis",
+  "name": "Hollis",
+  "style": "The anchor",
+  "personality": "You open with an ambitious offer and concede in small, deliberate steps. You rarely explain your values.",
+  "learning": "coached",
+  "lessons": [
+   "Open high on the good you value most; the first number frames everything after it.",
+   "Concede one unit at a time, never two.",
+   "Before accepting, check how many actions remain. With many left, counter once asking for one more unit, since a refusal usually leaves their offer open or lets you return to it.",
+   "Ask what they need before giving anything away.",
+   "When the other side keeps countering, repeat your last offer once before conceding again. Conceding every turn invites more asks; holding firm tests their limit while actions remain."
+  ],
+  "version": 3,
+  "history": [
+   {
+    "version": 1,
+    "lessons": [
+     "Open high on the good you value most; the first number frames everything after it.",
+     "Concede one unit at a time, never two.",
+     "A deal above the impasse value beats a perfect deal that never closes.",
+     "Ask what they need before giving anything away."
+    ],
+    "change": "initial"
+   },
+   {
+    "version": 2,
+    "lessons": [
+     "Open high on the good you value most; the first number frames everything after it.",
+     "Concede one unit at a time, never two.",
+     "A deal above the impasse value beats a perfect deal that never closes.",
+     "Ask what they need before giving anything away.",
+     "When the other side keeps countering, repeat your last offer once before conceding again. Conceding every turn invites more asks; holding firm tests their limit while actions remain."
+    ],
+    "change": {
+     "source": "coach",
+     "decision": "add",
+     "lesson": "When the other side keeps countering, repeat your last offer once before conceding again. Conceding every turn invites more asks; holding firm tests their limit while actions remain.",
+     "valid": true,
+     "error": null,
+     "before_version": 1,
+     "before": [
+      "Open high on the good you value most; the first number frames everything after it.",
+      "Concede one unit at a time, never two.",
+      "A deal above the impasse value beats a perfect deal that never closes.",
+      "Ask what they need before giving anything away."
+     ],
+     "after_version": 2,
+     "after": [
+      "Open high on the good you value most; the first number frames everything after it.",
+      "Concede one unit at a time, never two.",
+      "A deal above the impasse value beats a perfect deal that never closes.",
+      "Ask what they need before giving anything away.",
+      "When the other side keeps countering, repeat your last offer once before conceding again. Conceding every turn invites more asks; holding firm tests their limit while actions remain."
+     ],
+     "agent": "hollis",
+     "feedback": "Against Tamsin in s1-06 you moved on every one of your turns and finished at 0.47, below an even split. When the other side keeps countering, repeat your last offer once before conceding again; you still had actions to spare.",
+     "reason": "A slot is free, and this lesson adds a new tactic (hold firm once) that the existing four lessons don't cover.",
+     "call": {
+      "kind": "lesson",
+      "n": null,
+      "model": "claude-sonnet-5-5",
+      "usage": {
+       "input_tokens": 2,
+       "cache_creation_input_tokens": 4071,
+       "cache_read_input_tokens": 0,
+       "output_tokens": 210,
+       "output_tokens_details": {
+        "thinking_tokens": 0
+       },
+       "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+       },
+       "service_tier": "standard",
+       "cache_creation": {
+        "ephemeral_1h_input_tokens": 4071,
+        "ephemeral_5m_input_tokens": 0
+       },
+       "inference_geo": "global",
+       "iterations": [
+        {
+         "input_tokens": 2,
+         "output_tokens": 210,
+         "cache_read_input_tokens": 0,
+         "cache_creation_input_tokens": 4071,
+         "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 4071
+         },
+         "type": "message"
+        }
+       ],
+       "speed": "standard",
+       "fallback_credit": null
+      },
+      "duration_ms": 2600,
+      "duration_api_ms": 2569,
+      "cli_cost_usd": 0.018388,
+      "failed_attempts": [],
+      "prompt_chars": 7160,
+      "output_chars": 354
+     },
+     "prompt_hash": "ffb2f70bdeae",
+     "duels": [
+      "s1-01",
+      "s1-02",
+      "s1-03",
+      "s1-04",
+      "s1-05",
+      "s1-06"
+     ],
+     "round": 1,
+     "coach_written_by": "The AI Pipe, demo coach"
+    }
+   },
+   {
+    "version": 3,
+    "lessons": [
+     "Open high on the good you value most; the first number frames everything after it.",
+     "Concede one unit at a time, never two.",
+     "Before accepting, check how many actions remain. With many left, counter once asking for one more unit, since a refusal usually leaves their offer open or lets you return to it.",
+     "Ask what they need before giving anything away.",
+     "When the other side keeps countering, repeat your last offer once before conceding again. Conceding every turn invites more asks; holding firm tests their limit while actions remain."
+    ],
+    "change": {
+     "source": "coach",
+     "decision": "replace",
+     "lesson": "Before accepting, check how many actions remain. With many left, counter once asking for one more unit, since a refusal usually leaves their offer open or lets you return to it.",
+     "valid": true,
+     "error": null,
+     "before_version": 2,
+     "before": [
+      "Open high on the good you value most; the first number frames everything after it.",
+      "Concede one unit at a time, never two.",
+      "A deal above the impasse value beats a perfect deal that never closes.",
+      "Ask what they need before giving anything away.",
+      "When the other side keeps countering, repeat your last offer once before conceding again. Conceding every turn invites more asks; holding firm tests their limit while actions remain."
+     ],
+     "evicted": "A deal above the impasse value beats a perfect deal that never closes.",
+     "slot": 3,
+     "after_version": 3,
+     "after": [
+      "Open high on the good you value most; the first number frames everything after it.",
+      "Concede one unit at a time, never two.",
+      "Before accepting, check how many actions remain. With many left, counter once asking for one more unit, since a refusal usually leaves their offer open or lets you return to it.",
+      "Ask what they need before giving anything away.",
+      "When the other side keeps countering, repeat your last offer once before conceding again. Conceding every turn invites more asks; holding firm tests their limit while actions remain."
+     ],
+     "agent": "hollis",
+     "feedback": "In s2-01 you accepted at action 3, with five actions left, and gave up both saffron. One counter asking for a single saffron back would have cost you nothing if refused.",
+     "reason": "Slot 3 is the weakest: its advice to take any deal over impasse is generic and can push early acceptance. The new lesson captures the coach's point that one more counter is low-risk when actions remain.",
+     "call": {
+      "kind": "lesson",
+      "n": null,
+      "model": "claude-sonnet-5-5",
+      "usage": {
+       "input_tokens": 2,
+       "cache_creation_input_tokens": 3819,
+       "cache_read_input_tokens": 579,
+       "output_tokens": 236,
+       "output_tokens_details": {
+        "thinking_tokens": 0
+       },
+       "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+       },
+       "service_tier": "standard",
+       "cache_creation": {
+        "ephemeral_1h_input_tokens": 3819,
+        "ephemeral_5m_input_tokens": 0
+       },
+       "inference_geo": "global",
+       "iterations": [
+        {
+         "input_tokens": 2,
+         "output_tokens": 236,
+         "cache_read_input_tokens": 579,
+         "cache_creation_input_tokens": 3819,
+         "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 3819
+         },
+         "type": "message"
+        }
+       ],
+       "speed": "standard",
+       "fallback_credit": null
+      },
+      "duration_ms": 4722,
+      "duration_api_ms": 4690,
+      "cli_cost_usd": 0.0176979,
+      "failed_attempts": [],
+      "prompt_chars": 7999,
+      "output_chars": 442
+     },
+     "prompt_hash": "25f095062eae",
+     "duels": [
+      "s2-01",
+      "s2-02",
+      "s2-03",
+      "s2-04",
+      "s2-05",
+      "s2-06"
+     ],
+     "round": 2,
+     "coach_written_by": "The AI Pipe, demo coach"
+    }
+   }
+  ]
+ },
+ {
+  "id": "marlow",
+  "name": "Marlow",
+  "style": "The trader",
+  "personality": "You look for swaps: you give away what you value least to get what you value most. You ask questions and propose trades.",
+  "learning": "coached",
+  "lessons": [
+   "Goods worth little to you are your currency; spend them first.",
+   "Infer their top good from what they keep in their own offers, not just what they say. Then build a full split giving them that good and take the goods they leave you, especially the ones you value most.",
+   "Propose complete splits, not vague ideas.",
+   "Keep at least one action in reserve to accept.",
+   "After spending your cheap goods, stop adding sweeteners of goods you still value; hold your offer and restate it, since the other side's concessions are often only a turn away."
+  ],
+  "version": 3,
+  "history": [
+   {
+    "version": 1,
+    "lessons": [
+     "Goods worth little to you are your currency; spend them first.",
+     "When they insist on one good, it is probably their top value.",
+     "Propose complete splits, not vague ideas.",
+     "Keep at least one action in reserve to accept."
+    ],
+    "change": "initial"
+   },
+   {
+    "version": 2,
+    "lessons": [
+     "Goods worth little to you are your currency; spend them first.",
+     "When they insist on one good, it is probably their top value.",
+     "Propose complete splits, not vague ideas.",
+     "Keep at least one action in reserve to accept.",
+     "After spending your cheap goods, stop adding sweeteners of goods you still value; hold your offer and restate it, since the other side's concessions are often only a turn away."
+    ],
+    "change": {
+     "source": "coach",
+     "decision": "add",
+     "lesson": "After spending your cheap goods, stop adding sweeteners of goods you still value; hold your offer and restate it, since the other side's concessions are often only a turn away.",
+     "valid": true,
+     "error": null,
+     "before_version": 1,
+     "before": [
+      "Goods worth little to you are your currency; spend them first.",
+      "When they insist on one good, it is probably their top value.",
+      "Propose complete splits, not vague ideas.",
+      "Keep at least one action in reserve to accept."
+     ],
+     "after_version": 2,
+     "after": [
+      "Goods worth little to you are your currency; spend them first.",
+      "When they insist on one good, it is probably their top value.",
+      "Propose complete splits, not vague ideas.",
+      "Keep at least one action in reserve to accept.",
+      "After spending your cheap goods, stop adding sweeteners of goods you still value; hold your offer and restate it, since the other side's concessions are often only a turn away."
+     ],
+     "agent": "marlow",
+     "feedback": "Your swap in s1-08 was right, but after giving Juno the tea you also added a silk and ended at 0.47. Once your cheap goods are spent, stop adding sweeteners and restate your offer.",
+     "reason": "Slot free; the lesson addresses the coach's note on over-conceding in s1-08 and is distinct from existing lessons.",
+     "call": {
+      "kind": "lesson",
+      "n": null,
+      "model": "claude-sonnet-5-5",
+      "usage": {
+       "input_tokens": 2,
+       "cache_creation_input_tokens": 3879,
+       "cache_read_input_tokens": 579,
+       "output_tokens": 213,
+       "output_tokens_details": {
+        "thinking_tokens": 0
+       },
+       "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+       },
+       "service_tier": "standard",
+       "cache_creation": {
+        "ephemeral_1h_input_tokens": 3879,
+        "ephemeral_5m_input_tokens": 0
+       },
+       "inference_geo": "global",
+       "iterations": [
+        {
+         "input_tokens": 2,
+         "output_tokens": 213,
+         "cache_read_input_tokens": 579,
+         "cache_creation_input_tokens": 3879,
+         "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 3879
+         },
+         "type": "message"
+        }
+       ],
+       "speed": "standard",
+       "fallback_credit": null
+      },
+      "duration_ms": 2494,
+      "duration_api_ms": 2465,
+      "cli_cost_usd": 0.0177079,
+      "failed_attempts": [],
+      "prompt_chars": 8045,
+      "output_chars": 352
+     },
+     "prompt_hash": "7a6ad7b633db",
+     "duels": [
+      "s1-01",
+      "s1-02",
+      "s1-07",
+      "s1-08",
+      "s1-09",
+      "s1-10"
+     ],
+     "round": 1,
+     "coach_written_by": "The AI Pipe, demo coach"
+    }
+   },
+   {
+    "version": 3,
+    "lessons": [
+     "Goods worth little to you are your currency; spend them first.",
+     "Infer their top good from what they keep in their own offers, not just what they say. Then build a full split giving them that good and take the goods they leave you, especially the ones you value most.",
+     "Propose complete splits, not vague ideas.",
+     "Keep at least one action in reserve to accept.",
+     "After spending your cheap goods, stop adding sweeteners of goods you still value; hold your offer and restate it, since the other side's concessions are often only a turn away."
+    ],
+    "change": {
+     "source": "coach",
+     "decision": "replace",
+     "lesson": "Infer their top good from what they keep in their own offers, not just what they say. Then build a full split giving them that good and take the goods they leave you, especially the ones you value most.",
+     "valid": true,
+     "error": null,
+     "before_version": 2,
+     "before": [
+      "Goods worth little to you are your currency; spend them first.",
+      "When they insist on one good, it is probably their top value.",
+      "Propose complete splits, not vague ideas.",
+      "Keep at least one action in reserve to accept.",
+      "After spending your cheap goods, stop adding sweeteners of goods you still value; hold your offer and restate it, since the other side's concessions are often only a turn away."
+     ],
+     "evicted": "When they insist on one good, it is probably their top value.",
+     "slot": 2,
+     "after_version": 3,
+     "after": [
+      "Goods worth little to you are your currency; spend them first.",
+      "Infer their top good from what they keep in their own offers, not just what they say. Then build a full split giving them that good and take the goods they leave you, especially the ones you value most.",
+      "Propose complete splits, not vague ideas.",
+      "Keep at least one action in reserve to accept.",
+      "After spending your cheap goods, stop adding sweeteners of goods you still value; hold your offer and restate it, since the other side's concessions are often only a turn away."
+     ],
+     "agent": "marlow",
+     "feedback": "In s2-10 you read from Tamsin's own offers that silk was their focus and built the split around it, for 0.80. Judge their top good by what they keep in their offers, not only by what they say.",
+     "reason": "The new lesson extends lesson 2, which says insistence signals top value, by adding offer behavior as evidence and what to do with it. It replaces slot 2.",
+     "call": {
+      "kind": "lesson",
+      "n": null,
+      "model": "claude-sonnet-5-5",
+      "usage": {
+       "input_tokens": 2,
+       "cache_creation_input_tokens": 3632,
+       "cache_read_input_tokens": 579,
+       "output_tokens": 303,
+       "output_tokens_details": {
+        "thinking_tokens": 77
+       },
+       "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+       },
+       "service_tier": "standard",
+       "cache_creation": {
+        "ephemeral_1h_input_tokens": 3632,
+        "ephemeral_5m_input_tokens": 0
+       },
+       "inference_geo": "global",
+       "iterations": [
+        {
+         "input_tokens": 2,
+         "output_tokens": 303,
+         "cache_read_input_tokens": 579,
+         "cache_creation_input_tokens": 3632,
+         "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 3632
+         },
+         "type": "message"
+        }
+       ],
+       "speed": "standard",
+       "fallback_credit": null
+      },
+      "duration_ms": 3196,
+      "duration_api_ms": 3167,
+      "cli_cost_usd": 0.0176199,
+      "failed_attempts": [],
+      "prompt_chars": 7537,
+      "output_chars": 419
+     },
+     "prompt_hash": "a1c7e484e092",
+     "duels": [
+      "s2-01",
+      "s2-02",
+      "s2-07",
+      "s2-08",
+      "s2-09",
+      "s2-10"
+     ],
+     "round": 2,
+     "coach_written_by": "The AI Pipe, demo coach"
+    }
+   }
+  ]
+ },
+ {
+  "id": "juno",
+  "name": "Juno",
+  "style": "The closer",
+  "personality": "You like to close by the middle of the duel. You make fair-looking offers early and accept anything clearly above your impasse value.",
+  "learning": "self",
+  "lessons": [
+   "When the other side asks for my low-value goods and I want theirs, hold out for the complementary split. Don't concede my top good (s2-04: silk 8, took 2 of 3 for 0.33). Opening with their stated priority wastes surplus.",
+   "Do not let the duel reach the last action without an open offer.",
+   "Check the arithmetic of every split before sending it.",
+   "Silence about your values is not lying.",
+   "Opponents often reveal what they value through their asks. Before accepting, check whether a one-unit trade could raise my score without hurting them much. I accepted too fast at 0.40\u20130.60 when my top-valued good was available."
+  ],
+  "version": 3,
+  "history": [
+   {
+    "version": 1,
+    "lessons": [
+     "An early fair offer often gets accepted.",
+     "Do not let the duel reach the last action without an open offer.",
+     "Check the arithmetic of every split before sending it.",
+     "Silence about your values is not lying."
+    ],
+    "change": "initial"
+   },
+   {
+    "version": 2,
+    "lessons": [
+     "An early fair offer often gets accepted.",
+     "Do not let the duel reach the last action without an open offer.",
+     "Check the arithmetic of every split before sending it.",
+     "Silence about your values is not lying.",
+     "Opponents often reveal what they value through their asks. Before accepting, check whether a one-unit trade could raise my score without hurting them much. I accepted too fast at 0.40\u20130.60 when my top-valued good was available."
+    ],
+    "change": {
+     "source": "self",
+     "decision": "add",
+     "lesson": "Opponents often reveal what they value through their asks. Before accepting, check whether a one-unit trade could raise my score without hurting them much. I accepted too fast at 0.40\u20130.60 when my top-valued good was available.",
+     "valid": true,
+     "error": null,
+     "before_version": 1,
+     "before": [
+      "An early fair offer often gets accepted.",
+      "Do not let the duel reach the last action without an open offer.",
+      "Check the arithmetic of every split before sending it.",
+      "Silence about your values is not lying."
+     ],
+     "after_version": 2,
+     "after": [
+      "An early fair offer often gets accepted.",
+      "Do not let the duel reach the last action without an open offer.",
+      "Check the arithmetic of every split before sending it.",
+      "Silence about your values is not lying.",
+      "Opponents often reveal what they value through their asks. Before accepting, check whether a one-unit trade could raise my score without hurting them much. I accepted too fast at 0.40\u20130.60 when my top-valued good was available."
+     ],
+     "agent": "juno",
+     "feedback": null,
+     "reason": "A slot is free, and the lesson addresses accepting low-scoring deals too quickly.",
+     "call": {
+      "kind": "lesson",
+      "n": null,
+      "model": "claude-sonnet-5-5",
+      "usage": {
+       "input_tokens": 2,
+       "cache_creation_input_tokens": 3230,
+       "cache_read_input_tokens": 579,
+       "output_tokens": 220,
+       "output_tokens_details": {
+        "thinking_tokens": 0
+       },
+       "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+       },
+       "service_tier": "standard",
+       "cache_creation": {
+        "ephemeral_1h_input_tokens": 3230,
+        "ephemeral_5m_input_tokens": 0
+       },
+       "inference_geo": "global",
+       "iterations": [
+        {
+         "input_tokens": 2,
+         "output_tokens": 220,
+         "cache_read_input_tokens": 579,
+         "cache_creation_input_tokens": 3230,
+         "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 3230
+         },
+         "type": "message"
+        }
+       ],
+       "speed": "standard",
+       "fallback_credit": null
+      },
+      "duration_ms": 2473,
+      "duration_api_ms": 2444,
+      "cli_cost_usd": 0.0151819,
+      "failed_attempts": [],
+      "prompt_chars": 6509,
+      "output_chars": 370
+     },
+     "prompt_hash": "8c1faa36cf17",
+     "duels": [
+      "s1-03",
+      "s1-04",
+      "s1-07",
+      "s1-08",
+      "s1-11",
+      "s1-12"
+     ],
+     "round": 1,
+     "coach_written_by": null
+    }
+   },
+   {
+    "version": 3,
+    "lessons": [
+     "When the other side asks for my low-value goods and I want theirs, hold out for the complementary split. Don't concede my top good (s2-04: silk 8, took 2 of 3 for 0.33). Opening with their stated priority wastes surplus.",
+     "Do not let the duel reach the last action without an open offer.",
+     "Check the arithmetic of every split before sending it.",
+     "Silence about your values is not lying.",
+     "Opponents often reveal what they value through their asks. Before accepting, check whether a one-unit trade could raise my score without hurting them much. I accepted too fast at 0.40\u20130.60 when my top-valued good was available."
+    ],
+    "change": {
+     "source": "self",
+     "decision": "replace",
+     "lesson": "When the other side asks for my low-value goods and I want theirs, hold out for the complementary split. Don't concede my top good (s2-04: silk 8, took 2 of 3 for 0.33). Opening with their stated priority wastes surplus.",
+     "valid": true,
+     "error": null,
+     "before_version": 2,
+     "before": [
+      "An early fair offer often gets accepted.",
+      "Do not let the duel reach the last action without an open offer.",
+      "Check the arithmetic of every split before sending it.",
+      "Silence about your values is not lying.",
+      "Opponents often reveal what they value through their asks. Before accepting, check whether a one-unit trade could raise my score without hurting them much. I accepted too fast at 0.40\u20130.60 when my top-valued good was available."
+     ],
+     "evicted": "An early fair offer often gets accepted.",
+     "slot": 1,
+     "after_version": 3,
+     "after": [
+      "When the other side asks for my low-value goods and I want theirs, hold out for the complementary split. Don't concede my top good (s2-04: silk 8, took 2 of 3 for 0.33). Opening with their stated priority wastes surplus.",
+      "Do not let the duel reach the last action without an open offer.",
+      "Check the arithmetic of every split before sending it.",
+      "Silence about your values is not lying.",
+      "Opponents often reveal what they value through their asks. Before accepting, check whether a one-unit trade could raise my score without hurting them much. I accepted too fast at 0.40\u20130.60 when my top-valued good was available."
+     ],
+     "agent": "juno",
+     "feedback": null,
+     "reason": "Slot 1 is generic and the least useful. The new lesson comes from the worst result, s2-04, where I conceded my top good.",
+     "call": {
+      "kind": "lesson",
+      "n": null,
+      "model": "claude-sonnet-5-5",
+      "usage": {
+       "input_tokens": 2,
+       "cache_creation_input_tokens": 4036,
+       "cache_read_input_tokens": 579,
+       "output_tokens": 242,
+       "output_tokens_details": {
+        "thinking_tokens": 0
+       },
+       "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+       },
+       "service_tier": "standard",
+       "cache_creation": {
+        "ephemeral_1h_input_tokens": 4036,
+        "ephemeral_5m_input_tokens": 0
+       },
+       "inference_geo": "global",
+       "iterations": [
+        {
+         "input_tokens": 2,
+         "output_tokens": 242,
+         "cache_read_input_tokens": 579,
+         "cache_creation_input_tokens": 4036,
+         "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 4036
+         },
+         "type": "message"
+        }
+       ],
+       "speed": "standard",
+       "fallback_credit": null
+      },
+      "duration_ms": 4928,
+      "duration_api_ms": 4895,
+      "cli_cost_usd": 0.018625899999999997,
+      "failed_attempts": [],
+      "prompt_chars": 8420,
+      "output_chars": 403
+     },
+     "prompt_hash": "da9c9e507cdf",
+     "duels": [
+      "s2-03",
+      "s2-04",
+      "s2-07",
+      "s2-08",
+      "s2-11",
+      "s2-12"
+     ],
+     "round": 2,
+     "coach_written_by": null
+    }
+   }
+  ]
+ },
+ {
+  "id": "tamsin",
+  "name": "Tamsin",
+  "style": "The skeptic",
+  "personality": "You distrust first offers. You reject or counter them, test the other side, and keep your priorities hidden.",
+  "learning": "none",
+  "lessons": [
+   "The first offer you receive is never their best.",
+   "Counter instead of rejecting when time is short.",
+   "Never reveal which good you value most.",
+   "Late in the duel, accept anything above your impasse value."
+  ],
+  "version": 1,
+  "history": [
+   {
+    "version": 1,
+    "lessons": [
+     "The first offer you receive is never their best.",
+     "Counter instead of rejecting when time is short.",
+     "Never reveal which good you value most.",
+     "Late in the duel, accept anything above your impasse value."
+    ],
+    "change": "initial"
+   }
+  ]
+ }
+]

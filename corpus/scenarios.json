@@ -1,0 +1,98 @@
+[
+ {
+  "id": "S1",
+  "stock": {
+   "tea": 4,
+   "silk": 3,
+   "saffron": 2
+  },
+  "values": {
+   "first": {
+    "tea": 7,
+    "silk": 0,
+    "saffron": 1
+   },
+   "second": {
+    "tea": 4,
+    "silk": 2,
+    "saffron": 4
+   }
+  },
+  "impasse": {
+   "first": 6,
+   "second": 6
+  }
+ },
+ {
+  "id": "S2",
+  "stock": {
+   "tea": 4,
+   "silk": 3,
+   "saffron": 2
+  },
+  "values": {
+   "first": {
+    "tea": 6,
+    "silk": 0,
+    "saffron": 3
+   },
+   "second": {
+    "tea": 6,
+    "silk": 2,
+    "saffron": 0
+   }
+  },
+  "impasse": {
+   "first": 6,
+   "second": 6
+  }
+ },
+ {
+  "id": "S3",
+  "stock": {
+   "tea": 4,
+   "silk": 3,
+   "saffron": 2
+  },
+  "values": {
+   "first": {
+    "tea": 0,
+    "silk": 8,
+    "saffron": 3
+   },
+   "second": {
+    "tea": 3,
+    "silk": 2,
+    "saffron": 6
+   }
+  },
+  "impasse": {
+   "first": 6,
+   "second": 6
+  }
+ },
+ {
+  "id": "S4",
+  "stock": {
+   "tea": 4,
+   "silk": 3,
+   "saffron": 2
+  },
+  "values": {
+   "first": {
+    "tea": 1,
+    "silk": 8,
+    "saffron": 1
+   },
+   "second": {
+    "tea": 2,
+    "silk": 4,
+    "saffron": 5
+   }
+  },
+  "impasse": {
+   "first": 6,
+   "second": 6
+  }
+ }
+]

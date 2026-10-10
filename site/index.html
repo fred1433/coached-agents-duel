@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coached Duel Sheet</title>
+<meta name="description" content="A recorded season of coached AI agents negotiating under fixed rules, and a simulation of what a two-week pilot could detect.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..700&family=Literata:ital,opsz,wght@0,7..72,400..600;1,7..72,400..500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header class="intro">
+    <h1>Coaching or luck, on a score sheet you can check by hand</h1>
+    <p class="lede">Two agents split four tea, three silk and two saffron in eight alternating actions. Each one has values the other cannot see and a memory of at most five lessons. The engine validates every action and computes both scores. The model never decides who won.</p>
+    <p class="provenance">Recorded model runs. Demo coaching written by The AI Pipe.</p>
+  </header>
+
+  <section class="sheet-section" aria-labelledby="sheet-title">
+    <h2 id="sheet-title" class="visually-hidden">The duel, move by move</h2>
+    <article class="sheet" id="sheet">
+      <div class="sheet-head">
+        <div class="field f-event"><span class="label">Duel</span><span class="entry" id="f-event"></span></div>
+        <div class="field f-scen"><span class="label">Scenario</span><span class="entry" id="f-scen"></span></div>
+        <div class="field f-first"><span class="label">Moves first</span><span class="entry ink-first" id="f-first"></span></div>
+        <div class="field f-second"><span class="label">Moves second</span><span class="entry ink-second" id="f-second"></span></div>
+      </div>
+      <div class="table-row">
+        <span class="label">On the table</span>
+        <div class="stock" id="stock"></div>
+      </div>
+      <div class="sheet-body">
+        <div class="moves" role="grid" aria-label="Moves" id="moves"></div>
+        <div class="board" id="board" aria-live="polite"></div>
+      </div>
+      <div class="sheet-foot">
+        <div class="steppers">
+          <button type="button" class="btn" id="prev">Previous move</button>
+          <button type="button" class="btn" id="next">Next move</button>
+        </div>
+        <button type="button" class="btn btn-seal" id="reveal" aria-expanded="false">Open the sealed values</button>
+      </div>
+      <div class="reveal" id="reveal-panel" hidden></div>
+    </article>
+    <p class="sheet-note">This duel is shown because it is easy to follow, not because it is typical. Every recorded duel can be opened on the sheet.</p>
+    <details class="corpus" id="corpus">
+      <summary><span id="corpus-count"></span></summary>
+      <div class="corpus-list" id="corpus-list"></div>
+    </details>
+  </section>
+
+  <section class="coach-section" aria-labelledby="coach-title">
+    <h2 id="coach-title">From a coach's note to the next match</h2>
+    <p class="section-lede">After each series, the two coached agents receive a short note and turn it into one lesson. The self-reflective agent gets the same match information without a note and writes its own. Memory holds five lessons, so from the second round each new lesson has to replace one or be discarded.</p>
+    <div class="coach-controls">
+      <div class="seg" role="tablist" aria-label="Agent" id="agent-tabs"></div>
+      <div class="seg seg-small" role="tablist" aria-label="Round" id="round-tabs"></div>
+    </div>
+    <div class="chain" id="chain"></div>
+  </section>
+
+  <section class="power-section" aria-labelledby="power-title">
+    <h2 id="power-title">What a two-week pilot could detect</h2>
+    <p class="section-lede">The simulation estimates what a two-week pilot could detect under explicit assumptions. Each coach's agent is split into a coached branch and a self-reflective branch from the same saved state; after two weeks both are frozen and play the same evaluation matches. The benefit of coaching is the gap between the two, coach by coach, tested across coaches.</p>
+    <div class="power-grid">
+      <div class="power-chart">
+        <div class="power-controls">
+          <div class="ctl"><span class="ctl-label">Coaches</span><div class="seg seg-small" id="c-coaches"></div></div>
+          <div class="ctl"><span class="ctl-label">How much the benefit varies between coaches</span><div class="seg seg-small" id="c-tau"></div></div>
+          <div class="ctl"><span class="ctl-label">Replay noise</span><div class="seg seg-small" id="c-noise"></div></div>
+        </div>
+        <svg id="chart" viewBox="0 0 640 380" role="img" aria-labelledby="chart-desc"><desc id="chart-desc"></desc></svg>
+      </div>
+      <div class="power-read">
+        <p class="readout" id="readout"></p>
+        <p class="aside">More matches make each agent's score more precise. More coaches show whether the benefit holds beyond one coach. When the gap varies a lot between coaches, extra matches stop helping and only more coaches do.</p>
+        <p class="aside" id="rank-line"></p>
+        <p class="aside">A non-significant result is reported as the range of benefits still compatible with the data. "Undetermined at this size" is a possible outcome.</p>
+      </div>
+    </div>
+    <div class="cost" id="cost"></div>
+    <details class="assumptions">
+      <summary>Assumptions behind the simulation</summary>
+      <div id="assumptions"></div>
+    </details>
+  </section>
+</main>
+<footer class="foot">
+  <p>Built by The AI Pipe. The engine, the simulator, the tests and the recorded corpus are public: <a href="https://github.com/fred1433/coached-agents-duel">github.com/fred1433/coached-agents-duel</a>. A command in the repository replays every logged duel and recomputes every score without any model account.</p>
+</footer>
+<script src="app.js"></script>
+</body>
+</html>
